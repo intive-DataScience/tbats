@@ -1,5 +1,7 @@
 # BATS and TBATS time series forecasting
 
+**This is an early ALPHA version !!!**
+
 Package provides BATS and TBATS time series forecasting methods:
 
 > De Livera, A.M., Hyndman, R.J., & Snyder, R. D. (2011), Forecasting time series with complex seasonal patterns using exponential smoothing, Journal of the American Statistical Association, 106(496), 1513-1527.
@@ -41,7 +43,11 @@ y_forecasted = fitted_model.forecast(steps=14)
 
 # Summarize fitted model
 print(fitted_model.summary())
+```
 
+Reading model details
+
+```python
 # Time series analysis
 print(fitted_model.y_hat) # in sample prediction
 print(fitted_model.resid) # in sample residuals

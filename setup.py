@@ -59,7 +59,7 @@ setuptools.setup(
     install_requires=['numpy', 'scipy', 'pmdarima', 'sklearn'],
     tests_require=['pytest'],
     extras_require={
-        'dev': ['pip-compile', 'rpy2'],
+        'dev': ['pip-tools', 'rpy2'],
     },
     cmdclass={
         'test': PyTest,
