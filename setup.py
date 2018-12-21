@@ -45,7 +45,7 @@ setuptools.setup(
     name='tbats',
     version='0.9.0',
     packages=setuptools.find_packages(),
-    url='https://github.com/cotterpl/tbats',
+    url='https://github.com/intive-DataScience/tbats',
     license='MIT License',
     author='Grzegorz Skorupa (intive)',
     author_email='grzegorz.skorupa@intive.com',
