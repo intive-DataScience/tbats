@@ -43,7 +43,7 @@ class RTestCommand(TestCommand):
 
 setuptools.setup(
     name='tbats',
-    version='0.9.0',
+    version='0.9.1',
     packages=setuptools.find_packages(),
     url='https://github.com/intive-DataScience/tbats',
     license='MIT License',
@@ -54,7 +54,6 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
-        "Classifier: Development Status :: 4 - Beta",
     ],
     install_requires=['numpy', 'scipy', 'pmdarima', 'sklearn'],
     tests_require=['pytest'],
