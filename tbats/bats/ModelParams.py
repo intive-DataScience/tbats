@@ -1,23 +1,42 @@
 import numpy as np
 
-import tbats.transformation as transformation
 from ..abstract import ArrayHelper, ModelParams as AbstractModelParams
 
 
 class ModelParams(AbstractModelParams):
+    """Holds all parameters needed to calculate BATS model and forecasts
+
+        For other parameters documentation see parent class documentation.
+
+        Parameters
+        ----------
+        gamma_params: array-like of floats
+            Gamma smoothing parameters for seasonal effects.
+            In BATS there is one gamma parameter for each season.
+        """
 
     def __init__(self, components, alpha, beta=None, phi=None, boxcox_lambda=None,
                  gamma_params=None,
                  ar_coefs=None, ma_coefs=None, x0=None):
+        """See parent class documentation for details"""
         super().__init__(components=components, alpha=alpha, beta=beta, phi=phi, boxcox_lambda=boxcox_lambda,
                          gamma_params=gamma_params, ar_coefs=ar_coefs, ma_coefs=ma_coefs, x0=x0)
 
     @classmethod
     def with_default_starting_params(cls, y, components):
-        """
-        Factory method for starting model parameters
-        :param BATSComponents components: Which parameters the models uses
-        :return: BATSModelParams
+        """Factory method for starting model parameters.
+
+        Parameters
+        ----------
+        y: array-like of floats
+            Time series
+        components: Components
+            Components used in the model
+
+        Returns
+        -------
+        ModelParams
+            Default starting params.
         """
         alpha = 0.09
         if components.seasonal_periods.sum() > 16:
@@ -45,11 +64,13 @@ class ModelParams(AbstractModelParams):
                    gamma_params=gamma_params,
                    boxcox_lambda=boxcox_lambda)
 
-    def normalize_gamma_params(self, gamma_params=None):
+    def seasonal_components_amount(self):
+        """BATS model requires this many seasonal seed state values"""
+        return int(self.components.seasonal_periods.sum())
+
+    def _normalize_gamma_params(self, gamma_params=None):
+        """Ensures gamma params is an array. If necessary initializes Gamma params to zeroes"""
         gamma_params = ArrayHelper.to_array(gamma_params)
         if len(gamma_params) != len(self.components.seasonal_periods):
             gamma_params = np.asarray([0.0] * len(self.components.seasonal_periods), float)
         return gamma_params
-
-    def seasonal_components_amount(self):
-        return int(self.components.seasonal_periods.sum())

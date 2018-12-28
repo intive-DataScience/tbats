@@ -21,8 +21,8 @@ class ParamsOptimizer(object):
     def optimal_model(self):
         # will return a model even if optimization did not converge
         model = self.context.create_model(self.optimal_params).fit(self.y)
-        if not model.is_fitted_:
-            model.add_warning("Model did not fit properly.")
+        if not model.is_fitted:
+            model.add_warning("Model did not calculate properly and seems unusable.")
         if not model.can_be_admissible():
             model.add_warning("Model is not admissible! Forecasts may be unstable. Check long term forecasts.")
         return model
@@ -38,7 +38,7 @@ class ParamsOptimizer(object):
 
         starting_vector = self.starting_params.to_vector()
         result = minimize(
-            self.scale_and_calculate_likelihood,
+            self.scale_and_calculate_likelihood,  # function being optimized
             x0=self.inv_scale_vector(starting_vector),
             # self.calculate_likelihood,
             # x0=starting_vector,

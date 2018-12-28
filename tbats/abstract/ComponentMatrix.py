@@ -46,7 +46,7 @@ class ComponentMatrix(object):
         w_seasons = []
         offset = 0
         matrix_seasonal_part = self.seasonal_part()
-        season_lengths = self.components.seasonal_component_lengths()
+        season_lengths = self.components.seasonal_components_amount()
         for s in season_lengths:
             w_seasons.append(matrix_seasonal_part[:, offset:(offset + s)])
             offset += s

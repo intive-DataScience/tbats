@@ -100,7 +100,7 @@ class TestBATSModel(object):
         assert expected_can_be_admissible == model.can_be_admissible()
         if expected_can_be_admissible:
             model = model.fit(y)
-            assert model.is_fitted_
+            assert model.is_fitted
             assert expected_is_admissible == model.is_admissible()
 
     def test_constant_model(self):
@@ -112,32 +112,33 @@ class TestBATSModel(object):
         assert np.allclose(y, model.y_hat)
         assert np.allclose([5.3] * 3, model.forecast(steps=3))
 
-    @pytest.mark.parametrize("components, params, x0, expected_y, expected_resid",
-                             [
-                                 [
-                                     dict(),
-                                     dict(alpha=0.5),
-                                     [0],
-                                     [0, 1, 2.5],
-                                     [2, 3, -0.5],
-                                 ],
-                                 [
-                                     dict(use_trend=True),
-                                     dict(alpha=0.5, beta=1),
-                                     [0, 0],
-                                     [0, 3, 6.5],
-                                     [2, 1, -4.5],
-                                 ],
-                                 [  # the same result as for test before, phi=1 when damping is not used
-                                     dict(use_trend=True),
-                                     dict(alpha=0.5, beta=1, phi=1),
-                                     [0, 0],
-                                     [0, 3, 6.5],
-                                     [2, 1, -4.5],
-                                 ],
+    @pytest.mark.parametrize(
+        "components, params, x0, expected_y, expected_resid",
+        [
+            [
+                dict(),
+                dict(alpha=0.5),
+                [0],
+                [0, 1, 2.5],
+                [2, 3, -0.5],
+            ],
+            [
+                dict(use_trend=True),
+                dict(alpha=0.5, beta=1),
+                [0, 0],
+                [0, 3, 6.5],
+                [2, 1, -4.5],
+            ],
+            [  # the same result as for test before, phi=1 when damping is not used
+                dict(use_trend=True),
+                dict(alpha=0.5, beta=1, phi=1),
+                [0, 0],
+                [0, 3, 6.5],
+                [2, 1, -4.5],
+            ],
 
-                             ]
-                             )
+        ]
+    )
     def test_fit(self, components, params, x0, expected_y, expected_resid):
         y = [2.0, 4.0, 2.0]
         c = Components(**components)
@@ -176,24 +177,25 @@ class TestBATSModel(object):
         # We expect 95% of residuals to lie within [-2,2] interval
         assert len(resid[np.where(np.abs(resid) < 2)]) / len(resid) > 0.90
 
-    @pytest.mark.parametrize("components, params, expected_y, expected_resid, expected_aic",
-                             [
-                                 [
-                                     dict(),
-                                     dict(alpha=0.5),
-                                     [0., 1., 2.5],
-                                     [2., 3., -0.5],
-                                     11.751992657296693,
-                                 ],
-                                 [
-                                     dict(use_trend=True),
-                                     dict(alpha=0.5, beta=1),
-                                     [0., 3., 6.5],
-                                     [2., 1., -4.5],
-                                     17.686478467164108,
-                                 ],
-                             ]
-                             )
+    @pytest.mark.parametrize(
+        "components, params, expected_y, expected_resid, expected_aic",
+        [
+            [
+                dict(),
+                dict(alpha=0.5),
+                [0., 1., 2.5],
+                [2., 3., -0.5],
+                11.751992657296693,
+            ],
+            [
+                dict(use_trend=True),
+                dict(alpha=0.5, beta=1),
+                [0., 3., 6.5],
+                [2., 1., -4.5],
+                17.686478467164108,
+            ],
+        ]
+    )
     def test_fit(self, components, params, expected_y, expected_resid, expected_aic):
         y = [2.0, 4.0, 2.0]
         c = Components(**components)

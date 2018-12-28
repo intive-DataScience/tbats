@@ -33,6 +33,10 @@ class Model(object):
     aic: float
         AIC criterion value
         np.inf when not fitted or failed to fit
+    params: ModelParams
+        Parameters used in the model
+    matrix: MatrixBuilderInterface
+        Matrices used in linear equations of the model
 
     Methods
     -------
@@ -129,7 +133,13 @@ class Model(object):
         return y_hat
 
     def summary(self):
-        """Returns model summary containing all parameter values."""
+        """Returns model summary containing all parameter values.
+
+        Returns
+        -------
+        str
+            Model summary
+        """
         str = ''
         str += self.params.summary() + '\n'
         str += 'AIC %f' % self.aic

@@ -83,7 +83,7 @@ class TestBATSModelParams(object):
     def test_create_x0_of_zeroes(self, components, params, expected):
         c = Components(**components)
         p = ModelParams(c, **params)
-        x0 = p.create_x0_of_zeroes()
+        x0 = p._create_x0_of_zeroes()
         assert np.array_equal(expected, x0)
 
     @pytest.mark.parametrize(
