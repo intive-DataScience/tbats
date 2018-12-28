@@ -1,23 +1,54 @@
-import numpy as np
-
 from ..abstract import Estimator
 from . import Context
 
 
 class BATS(Estimator):
+    """
+    BATS estimator used to fit and select best performing model.
+
+    BATS (Exponential smoothing state space model with Box-Cox
+    transformation, ARMA errors, Trend and Seasonal components.)
+
+    Model has been described in De Livera, Hyndman & Snyder (2011).
+
+    All of the useful methods have been implemented in parent Estimator class.
+
+    """
+
     def __init__(self, use_box_cox=None, use_trend=None, use_damped_trend=None,
                  seasonal_periods=None, use_arma_errors=True,
-                 show_warnings=True, context=None,
-                 n_jobs=None):
-        """
+                 show_warnings=True,
+                 n_jobs=None, context=None):
+        """ Class constructor
 
-        :param use_box_cox: True/False/None
-        :param use_trend:
-        :param use_damped_trend:
-        :param seasonal_periods:
-        :param use_arma_errors:
-        :param show_warnings:
-        :param context: Provide this to override default behaviors, see abstract.ContextInterface
+        Parameters
+        ----------
+        use_box_cox: bool or None, optional (default=None)
+            If Box-Cox transformation of original series should be applied.
+            When None both cases shall be considered and better is selected by AIC.
+        use_trend: bool or None, optional (default=None)
+            Indicates whether to include a trend or not.
+            When None both cases shall be considered and better is selected by AIC.
+        use_damped_trend: bool or None, optional (default=None)
+            Indicates whether to include a damping parameter in the trend or not.
+            Applies only when trend is used.
+            When None both cases shall be considered and better is selected by AIC.
+        seasonal_periods: iterable or array-like, optional (default=None)
+            Length of each of the periods (amount of observations in each period).
+            BATS accepts only int values here.
+            When None or empty array, non-seasonal model shall be fitted.
+        use_arma_errors: bool, optional (default=True)
+            When True BATS will try to improve the model by modelling residuals with ARMA.
+            Best model will be selected by AIC.
+            If False, ARMA residuals modeling will not be considered.
+        show_warnings: bool, optional (default=True)
+            If warnings should be shown or not.
+            Also see Model.warnings variable that contains all model related warnings.
+        n_jobs: int, optional (default=None)
+            How many jobs to run in parallel when fitting BATS model.
+            When not provided BATS shall try to utilize all available cpu cores.
+        context: abstract.ContextInterface, optional (default=None)
+            For advanced users only. Provide this to override default behaviors
         """
         if context is None:
             context = Context(show_warnings)  # the default BATS context
@@ -25,9 +56,11 @@ class BATS(Estimator):
                          seasonal_periods=seasonal_periods, use_arma_errors=use_arma_errors,
                          n_jobs=n_jobs)
 
-    def normalize_seasonal_periods(self, seasonal_periods):
-        return self.normalize_seasonal_periods_to_type(seasonal_periods, dtype=int)
+    def _normalize_seasonal_periods(self, seasonal_periods):
+        """Makes sure periods are of int type"""
+        return self._normalize_seasonal_periods_to_type(seasonal_periods, dtype=int)
 
-    def do_fit(self, y):
-        components_grid = self.prepare_components_grid()
-        return self.choose_model_from_possible_component_settings(y, components_grid)
+    def _do_fit(self, y):
+        """Checks all allowed parameter combinations in order to choose best model"""
+        components_grid = self._prepare_components_grid()
+        return self._choose_model_from_possible_component_settings(y, components_grid)

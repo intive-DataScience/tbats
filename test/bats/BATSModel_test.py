@@ -100,7 +100,7 @@ class TestBATSModel(object):
         assert expected_can_be_admissible == model.can_be_admissible()
         if expected_can_be_admissible:
             model = model.fit(y)
-            assert model.is_fitted
+            assert model.is_fitted_
             assert expected_is_admissible == model.is_admissible()
 
     def test_constant_model(self):

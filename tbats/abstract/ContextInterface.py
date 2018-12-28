@@ -8,7 +8,7 @@ class ContextInterface(object):
         # abstract method
         raise NotImplementedError()
 
-    def create_model(self, params):
+    def create_model(self, params, validate_input=True):
         # abstract method
         raise NotImplementedError()
 

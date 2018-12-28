@@ -17,10 +17,10 @@ class Context(ContextInterface):
             ModelParams(components=Components.create_constant_components(), alpha=0, x0=[constant_value])
         )
 
-    def create_model(self, params, validate_y=True):
+    def create_model(self, params, validate_input=True):
         return Model(
             params,
-            validate_input=validate_y,
+            validate_input=validate_input,
             context=self,
         )
 

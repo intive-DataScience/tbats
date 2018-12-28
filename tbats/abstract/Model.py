@@ -8,7 +8,56 @@ import tbats.transformation as transformation
 
 
 class Model(object):
+    """BATS or TBATS model
+
+    Attributes
+    ----------
+    warnings: array-like
+        All warning messages associated to the model.
+        Empty array when there are no warnings.
+    is_fitted: bool
+        If the model has been successfully fitted
+        False when model was not fitted at all or fitting of the model failed
+    y: array-like or None
+        Time series model has been fitted to.
+        None when no fitting was performed yet.
+    y_hat: array-like or None
+        In series predictions.
+    resid: array-like or None
+        Residuals from in series predictions
+    resid_boxcox: array-like or None
+        Residuals from Box-Cox transformed predictions.
+        When no box cox is used those are equal to resid.
+    x_last: array-like or None
+        last vector from x matrix that can be used to calculate predictions
+    aic: float
+        AIC criterion value
+        np.inf when not fitted or failed to fit
+
+    Methods
+    -------
+    fit(y)
+        Calculates in-series predictions for provided time series.
+        Can also be used to re-fit the model.
+    forecast(steps=1)
+        Calculates forecast for provided amount of steps ahead.
+    """
+
     def __init__(self, model_params, context, validate_input=True):
+        """Prepares model for fitting.
+
+        Do not use this constructor directly. See abstract.Context methods.
+
+        Parameters
+        ----------
+        model_params: abstract.ModelParams
+            All model parameters and components needed for calculation.
+        context: abstract.ContextInterface
+            The context used for implementation details.
+        validate_input: bool
+            If input time series y should be trusted to be valid or not.
+            Used for performance.
+        """
         self.context = context
         self.warnings = []
         self.params = model_params
@@ -23,33 +72,34 @@ class Model(object):
         self.x_last = None
         self.aic = np.inf
 
-    def likelihood(self):
-        if not self.is_fitted:
-            return np.inf
+    def fit(self, y):
+        """Calculates in series predictions for provided time series.
 
-        residuals = self.resid_boxcox
+        Parameters
+        ----------
+        y: array-like
+            Time series to fit model to
 
-        with warnings.catch_warnings():
-            warnings.filterwarnings('error')
-            try:
-                likelihood_part = len(residuals) * np.log(np.sum(residuals * residuals))
-            except RuntimeWarning:
-                # calculation issues, values close to max float value
-                return np.inf
-
-        boxcox_part = 0
-        if self.params.components.use_box_cox:
-            boxcox_part = 2 * (self.params.boxcox_lambda - 1) * np.sum(np.log(self.y))
-
-        return likelihood_part - boxcox_part
-
-    def calculate_aic(self):
-        likelihood = self.likelihood()
-        if likelihood == np.inf:
-            return np.inf
-        return likelihood + 2 * self.params.amount()
+        Returns
+        -------
+        self
+            See class attributes to read fit results
+        """
+        return self._fit_to_observations(y, self.params.x0)
 
     def forecast(self, steps=1):
+        """Forecast for provided amount of steps ahead
+
+        Parameters
+        ----------
+        steps: int
+            Amount of steps to forecast
+
+        Returns
+        -------
+        array-like:
+            Forecasts
+        """
         if not self.is_fitted:
             self.context.get_exception_handler().exception(
                 'Model must be fitted to be able to forecast. Use fit method first.',
@@ -75,58 +125,46 @@ class Model(object):
             yw_hat[t] = w @ x
             x = F @ x
 
-        y_hat = self.inv_boxcox(yw_hat)
+        y_hat = self._inv_boxcox(yw_hat)
         return y_hat
 
-    def fit_ORIGINAL(self, y):
-        self.warnings = []
-        self.is_fitted = False
-        params = self.params
+    def summary(self):
+        """Returns model summary containing all parameter values."""
+        str = ''
+        str += self.params.summary() + '\n'
+        str += 'AIC %f' % self.aic
+        return str
 
-        if self.validate_input:
+    def likelihood(self):
+        """Calculates likelihood of the model. Used for optimization."""
+        if not self.is_fitted:
+            return np.inf
+
+        residuals = self.resid_boxcox
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings('error')
             try:
-                y = c1d(check_array(y, ensure_2d=False, force_all_finite=True, ensure_min_samples=1,
-                                    copy=True, dtype=np.float64))  # type: np.ndarray
-            except Exception as validation_exception:
-                self.context.get_exception_handler().exception("y series is invalid",
-                                                               error.InputArgsException,
-                                                               previous_exception=validation_exception)
+                likelihood_part = len(residuals) * np.log(np.sum(residuals * residuals))
+            except RuntimeWarning:
+                # calculation issues, values close to max float value
+                return np.inf
 
-        yw = self.boxcox(y)
+        boxcox_part = 0
+        if self.params.components.use_box_cox:
+            boxcox_part = 2 * (self.params.boxcox_lambda - 1) * np.sum(np.log(self.y))
 
-        matrix_builder = self.matrix
-        w = matrix_builder.make_w_vector()
-        g = matrix_builder.make_g_vector().T
-        F = matrix_builder.make_F_matrix()
+        return likelihood_part - boxcox_part
 
-        # initialize matrices
-        yw_hat = np.zeros((1, len(y)))
-        x = np.matrix(np.zeros((len(params.x0), len(yw) + 1)))
-        x[:, 0] = np.matrix(params.x0).T
-        e = np.zeros((1, len(y)))
-
-        # calculation, please note x[0] holds x0,
-        # therefore index is shifted by one from the original mathematical equation
-        for t in range(0, len(y)):
-            yw_hat[:, t] = w * x[:, t]
-            e[:, t] = yw[t] - yw_hat[:, t]
-            x[:, t + 1] = F * x[:, t] + g * e[:, t]
-
-        # store fit results
-        self.y = self.inv_boxcox(yw)
-        self.y_hat = self.inv_boxcox(yw_hat[0, :])
-        self.resid_boxcox = e[0, :]  # box-cox residuals, when no box-cox equal to self.resid
-        self.resid = self.y - self.y_hat
-        self.x = x
-
-        self.is_fitted = True
-        self.aic = self.calculate_aic()
-        return self
-
-    def fit(self, y):
-        return self._fit_to_observations(y, self.params.x0)
+    def calculate_aic(self):
+        """Calculates AIC criterion value for the model"""
+        likelihood = self.likelihood()
+        if likelihood == np.inf:
+            return np.inf
+        return likelihood + 2 * self.params.amount()
 
     def _fit_to_observations(self, y, starting_x):
+        """Fits model with starting x to time series"""
         self.warnings = []
         self.is_fitted = False
 
@@ -139,7 +177,7 @@ class Model(object):
                                                                error.InputArgsException,
                                                                previous_exception=validation_exception)
         self.y = y
-        yw = self.boxcox(y)
+        yw = self._boxcox(y)
 
         matrix_builder = self.matrix
         w = matrix_builder.make_w_vector()
@@ -160,13 +198,14 @@ class Model(object):
                     x = F @ x + g * e
             except RuntimeWarning:
                 # calculation issues, values close to max float value
+                self.add_warning('Numeric calculation issues detected. Model is not usable.')
                 self.is_fitted = False
                 return self
 
         # store fit results
         self.x_last = x
         self.resid_boxcox = yw - yw_hat
-        self.y_hat = self.inv_boxcox(yw_hat)
+        self.y_hat = self._inv_boxcox(yw_hat)
         self.resid = self.y - self.y_hat
 
         self.is_fitted = True
@@ -174,20 +213,20 @@ class Model(object):
 
         return self
 
-
-    def boxcox(self, y):
+    def _boxcox(self, y):
         yw = y
         if self.params.components.use_box_cox:
             yw = transformation.boxcox(y, lam=self.params.boxcox_lambda)
         return yw
 
-    def inv_boxcox(self, yw):
+    def _inv_boxcox(self, yw):
         y = yw
         if self.params.components.use_box_cox:
             y = transformation.inv_boxcox(yw, lam=self.params.boxcox_lambda)
         return y
 
     def can_be_admissible(self):
+        """Tells if model can be admissible."""
         if not self.params.is_box_cox_in_bounds():
             return False
 
@@ -205,6 +244,7 @@ class Model(object):
         return self.__D_matrix_eigen_values_check(D)
 
     def is_admissible(self):
+        """Tells if model is admissible (stable). Model that has not been fitted is not addmisible."""
         if not self.is_fitted:
             return False
         return self.can_be_admissible()
@@ -246,10 +286,11 @@ class Model(object):
         return np.all(np.abs(eigen_values) < 1.01)
 
     def add_warning(self, message):
-        self.warnings.append(message)
+        """Add a warning message to the model
 
-    def summary(self):
-        str = ''
-        str += self.params.summary() + '\n'
-        str += 'AIC %f' % self.aic
-        return str
+        Parameters
+        ----------
+        message: str
+            The message
+        """
+        self.warnings.append(message)

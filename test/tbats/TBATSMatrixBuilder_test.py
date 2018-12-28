@@ -95,7 +95,6 @@ class TestTBATSMatrixBuilder(object):
                 ],
             ],
             [  # when there are no harmonics for a season, then respective gamma is not present
-                # todo how optimization vector is built for this case?
                 dict(
                     seasonal_periods=[3, 5],
                     seasonal_harmonics=[0, 3],

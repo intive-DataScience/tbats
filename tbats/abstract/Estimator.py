@@ -8,13 +8,52 @@ import tbats.error as error
 
 
 class Estimator(BaseEstimator):
+    """Base estimator for BATS and TBATS models
+
+    Methods
+    -------
+    fit(y)
+        Fit to y and select best performing model based on AIC criterion.
+    """
+
     def __init__(self, context, use_box_cox=None, use_trend=None, use_damped_trend=None,
                  seasonal_periods=None, use_arma_errors=True,
                  n_jobs=None):
+        """ Class constructor
+
+        Parameters
+        ----------
+        context: abstract.ContextInterface
+            For advanced users only. Provide this to override default behaviors
+        use_box_cox: bool or None, optional (default=None)
+            If Box-Cox transformation of original series should be applied.
+            When None both cases shall be considered and better is selected by AIC.
+        use_trend: bool or None, optional (default=None)
+            Indicates whether to include a trend or not.
+            When None both cases shall be considered and better is selected by AIC.
+        use_damped_trend: bool or None, optional (default=None)
+            Indicates whether to include a damping parameter in the trend or not.
+            Applies only when trend is used.
+            When None both cases shall be considered and better is selected by AIC.
+        seasonal_periods: iterable or array-like, optional (default=None)
+            Length of each of the periods (amount of observations in each period).
+            BATS accepts only int values here.
+            When None or empty array, non-seasonal model shall be fitted.
+        use_arma_errors: bool, optional (default=True)
+            When True BATS will try to improve the model by modelling residuals with ARMA.
+            Best model will be selected by AIC.
+            If False, ARMA residuals modeling will not be considered.
+        show_warnings: bool, optional (default=True)
+            If warnings should be shown or not.
+            Also see Model.warnings variable that contains all model related warnings.
+        n_jobs: int, optional (default=None)
+            How many jobs to run in parallel when fitting BATS model.
+            When not provided BATS shall try to utilize all available cpu cores.
+        """
         self.context = context
         self.n_jobs = n_jobs
 
-        self.seasonal_periods = self.normalize_seasonal_periods(seasonal_periods)
+        self.seasonal_periods = self._normalize_seasonal_periods(seasonal_periods)
         self.use_box_cox = use_box_cox
         self.use_arma_errors = use_arma_errors
         self.use_trend = use_trend
@@ -27,16 +66,21 @@ class Estimator(BaseEstimator):
             use_damped_trend = False
         self.use_damped_trend = use_damped_trend
 
-    def normalize_seasonal_periods(self, seasonal_periods):
+    def _normalize_seasonal_periods(self, seasonal_periods):
         # abstract method
         raise NotImplementedError()
 
-    def do_fit(self, y):
+    def _do_fit(self, y):
         # abstract method
         raise NotImplementedError()
 
     def fit(self, y):
-        y = self.validate(y)
+        """Fit model to observations ``y``.
+
+        :param y: array-like or iterable, shape=(n_samples,)
+        :return: abstract.Model, Fitted model
+        """
+        y = self._validate(y)
         if y is False:
             # Input data is not valid and no exception was raised yet.
             # This can happen only when one overrides default exception handler (see tbats.error.ExceptionHandler)
@@ -45,14 +89,15 @@ class Estimator(BaseEstimator):
         if np.allclose(y, y[0]):
             return self.context.create_constant_model(y[0]).fit(y)
 
-        best_model = self.do_fit(y)
+        best_model = self._do_fit(y)
 
         for warning in best_model.warnings:
             self.context.get_exception_handler().warn(warning, error.ModelWarning)
 
         return best_model
 
-    def validate(self, y):
+    def _validate(self, y):
+        """Validates input time series. Also adjusts box_cox if necessary."""
         try:
             y = c1d(check_array(y, ensure_2d=False, force_all_finite=True, ensure_min_samples=1,
                                 copy=True, dtype=np.float64))  # type: np.ndarray
@@ -74,36 +119,40 @@ class Estimator(BaseEstimator):
 
         return y
 
-    # TODO remove when parallel code is ready
-    def choose_model_from_possible_component_settings_serial(self, y, components_grid):
-        best_model = None
-        best_model_aic = np.inf
-        for components_combination in components_grid:
-            case = self.context.create_case_from_dictionary(**components_combination)
-            model = case.fit(y)
-            if model.aic < best_model_aic:
-                best_model_aic = model.aic
-                best_model = model
-        return best_model
-
     def _case_fit(self, components_combination):
+        """Internal method used by parallel computation."""
         case = self.context.create_case_from_dictionary(**components_combination)
         return case.fit(self._y)
 
-    def choose_model_from_possible_component_settings(self, y, components_grid):
+    def _choose_model_from_possible_component_settings(self, y, components_grid):
+        """Fits all models in a grid and returns best one by AIC
+
+        Returns
+        -------
+            abstract.Model
+                Best model by AIC
+        """
         self._y = y
         # note n_jobs = None means to use cpu_count()
         pool = multiprocessing.pool.Pool(processes=self.n_jobs)
         models = pool.map(self._case_fit, components_grid)
-        self._y = None
-
+        self._y = None  # clean-up
+        if len(models) == 0:
+            return None
         best_model = models[0]
         for model in models:
             if model.aic < best_model.aic:
                 best_model = model
         return best_model
 
-    def prepare_components_grid(self, seasonal_harmonics=None):
+    def _prepare_components_grid(self, seasonal_harmonics=None):
+        """Provides a grid of all allowed model component combinations.
+
+        Parameters
+        ----------
+        seasonal_harmonics: array-like or None
+            When provided all component combinations shall contain those harmonics
+        """
         allowed_combinations = []
 
         use_box_cox = self.use_box_cox
@@ -135,7 +184,8 @@ class Estimator(BaseEstimator):
             })
         return ParameterGrid(allowed_combinations)
 
-    def prepare_non_seasonal_components_grid(self):
+    def _prepare_non_seasonal_components_grid(self):
+        """Provides a grid of all allowed  non-season model component combinations."""
         allowed_combinations = []
 
         use_box_cox = self.use_box_cox
@@ -171,7 +221,11 @@ class Estimator(BaseEstimator):
             combinations = [False, True]
         return combinations
 
-    def normalize_seasonal_periods_to_type(self, seasonal_periods, dtype):
+    def _normalize_seasonal_periods_to_type(self, seasonal_periods, dtype):
+        """Validates seasonal periods and normalizes them
+
+        Normalization ensures periods are of proper type, unique and sorted.
+        """
         if seasonal_periods is not None:
             try:
                 seasonal_periods = c1d(check_array(seasonal_periods, ensure_2d=False, force_all_finite=True,
@@ -185,7 +239,7 @@ class Estimator(BaseEstimator):
             seasonal_periods = np.unique(seasonal_periods)
             if len(seasonal_periods[np.where(seasonal_periods <= 1)]) > 0:
                 self.context.get_exception_handler().warn(
-                    "All seasonal periods should be integer values greater than 1. "
+                    "All seasonal periods should be values greater than 1. "
                     "Ignoring all seasonal period values that do not meet this condition.",
                     error.InputArgsWarning
                 )

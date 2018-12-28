@@ -21,7 +21,7 @@ class ParamsOptimizer(object):
     def optimal_model(self):
         # will return a model even if optimization did not converge
         model = self.context.create_model(self.optimal_params).fit(self.y)
-        if not model.is_fitted:
+        if not model.is_fitted_:
             model.add_warning("Model did not fit properly.")
         if not model.can_be_admissible():
             model.add_warning("Model is not admissible! Forecasts may be unstable. Check long term forecasts.")
@@ -66,7 +66,7 @@ class ParamsOptimizer(object):
         infinity = 10 ** 10  # we can not return np.inf as optimization will not work
         # print(optimization_vector)
         params = self.starting_params.with_vector_values(optimization_vector)
-        model = self.context.create_model(params)
+        model = self.context.create_model(params, validate_input=False)
         if not model.can_be_admissible():  # don't even calculate the model for such params
             return infinity
         model = model.fit(self.y)
@@ -76,7 +76,7 @@ class ParamsOptimizer(object):
         return likelihood
 
     def calculate_seed_x0(self, y, params):
-        model = self.context.create_model(params.with_zero_x0())
+        model = self.context.create_model(params.with_zero_x0(), validate_input=False)
         y_tilda = model.fit(y).resid_boxcox
 
         w = model.matrix.make_w_vector()
