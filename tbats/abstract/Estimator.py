@@ -1,4 +1,5 @@
 import numpy as np
+import multiprocessing
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_array, column_or_1d as c1d
 from sklearn.model_selection import ParameterGrid
@@ -8,8 +9,10 @@ import tbats.error as error
 
 class Estimator(BaseEstimator):
     def __init__(self, context, use_box_cox=None, use_trend=None, use_damped_trend=None,
-                 seasonal_periods=None, use_arma_errors=True):
+                 seasonal_periods=None, use_arma_errors=True,
+                 n_jobs=None):
         self.context = context
+        self.n_jobs = n_jobs
 
         self.seasonal_periods = self.normalize_seasonal_periods(seasonal_periods)
         self.use_box_cox = use_box_cox
@@ -38,8 +41,6 @@ class Estimator(BaseEstimator):
             # Input data is not valid and no exception was raised yet.
             # This can happen only when one overrides default exception handler (see tbats.error.ExceptionHandler)
             return None
-
-        # TODO refit existing model
 
         if np.allclose(y, y[0]):
             return self.context.create_constant_model(y[0]).fit(y)
@@ -72,6 +73,35 @@ class Estimator(BaseEstimator):
             self.use_box_cox = False
 
         return y
+
+    # TODO remove when parallel code is ready
+    def choose_model_from_possible_component_settings_serial(self, y, components_grid):
+        best_model = None
+        best_model_aic = np.inf
+        for components_combination in components_grid:
+            case = self.context.create_case_from_dictionary(**components_combination)
+            model = case.fit(y)
+            if model.aic < best_model_aic:
+                best_model_aic = model.aic
+                best_model = model
+        return best_model
+
+    def _case_fit(self, components_combination):
+        case = self.context.create_case_from_dictionary(**components_combination)
+        return case.fit(self._y)
+
+    def choose_model_from_possible_component_settings(self, y, components_grid):
+        self._y = y
+        # note n_jobs = None means to use cpu_count()
+        pool = multiprocessing.pool.Pool(processes=self.n_jobs)
+        models = pool.map(self._case_fit, components_grid)
+        self._y = None
+
+        best_model = models[0]
+        for model in models:
+            if model.aic < best_model.aic:
+                best_model = model
+        return best_model
 
     def prepare_components_grid(self, seasonal_harmonics=None):
         allowed_combinations = []
@@ -151,7 +181,7 @@ class Estimator(BaseEstimator):
                 self.context.get_exception_handler().exception("seasonal_periods definition is invalid",
                                                                error.InputArgsException,
                                                                previous_exception=validation_exception)
-            # todo make sure periods are int for bats and float for tbats
+
             seasonal_periods = np.unique(seasonal_periods)
             if len(seasonal_periods[np.where(seasonal_periods <= 1)]) > 0:
                 self.context.get_exception_handler().warn(

@@ -9,8 +9,6 @@ class Case(object):
         self.model = None  # not fitted yet
 
     def fit(self, y):
-        # TODO what is biasadj?
-
         best_model = self.fit_initial_model(y)
 
         if self.components.use_arma_errors:
@@ -21,10 +19,8 @@ class Case(object):
             q = arma_model.order[2]
             if p > 0 or q > 0:  # Found ARMA components
                 # Fit model with ARMA errors modelling
-                # TODO what if the previous best model is the non-seasonal one?
-                # TODO I think we should use non-seasonal model as a base
-                model_candidate = self.fit_case(y, self.components.with_arma(p, q))
-                if model_candidate.aic_ < best_model.aic_:
+                model_candidate = self.fit_case(y, best_model.params.components.with_arma(p, q))
+                if model_candidate.aic < best_model.aic:
                     best_model = model_candidate
 
         self.model = best_model

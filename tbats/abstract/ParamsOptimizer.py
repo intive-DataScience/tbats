@@ -49,8 +49,6 @@ class ParamsOptimizer(object):
                 # 'disp': True,
             }
         )
-        # TODO note R package for one dimensional optimization vector uses 'BGFS' algorithm
-        # TODO can we do parscale for optimization in python?
         self.success = result.success
 
         self.likelihood = result.fun
@@ -78,7 +76,6 @@ class ParamsOptimizer(object):
         return likelihood
 
     def calculate_seed_x0(self, y, params):
-        # TODO why does this model have ARMA since it is dumped later in starting params?
         model = self.context.create_model(params.with_zero_x0())
         y_tilda = model.fit(y).resid_boxcox
 

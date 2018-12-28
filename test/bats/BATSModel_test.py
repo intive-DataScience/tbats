@@ -203,7 +203,7 @@ class TestBATSModel(object):
         assert fitted_model.is_fitted
         assert np.allclose(expected_y, fitted_model.y_hat)
         assert np.allclose(expected_resid, fitted_model.resid)
-        assert np.isclose(expected_aic, fitted_model.aic_)
+        assert np.isclose(expected_aic, fitted_model.aic)
 
     def test_fit_simple_seasonality_no_noise(self):
         season_length = 4

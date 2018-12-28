@@ -42,7 +42,6 @@ class TestBATSParamsOptimizer(object):
         m = ParamsOptimizer(self.context)
         x0 = m.calculate_seed_x0(y, p)
         assert np.allclose(expected, x0)
-        # TODO add test for the case with seasonal components when implemented
 
     def test_fit_alpha_only(self):
         alpha = 0.7

@@ -46,5 +46,5 @@ class Context(ContextInterface):
     def create_case(self, components):
         return Case(components=components, context=self)
 
-    def create_harmonics_choosing_strategy(self):
-        return HarmonicsChoosingStrategy(self)
+    def create_harmonics_choosing_strategy(self, n_jobs=None):
+        return HarmonicsChoosingStrategy(self, n_jobs=n_jobs)

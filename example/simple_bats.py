@@ -12,7 +12,7 @@ y_to_predict = y[(len(y) - steps):]
 
 estimator = BATS(
     seasonal_periods=[14],
-    use_arma_errors=False,
+    use_arma_errors=True,
     use_box_cox=False,
 )
 fitted_model = estimator.fit(y_to_train)

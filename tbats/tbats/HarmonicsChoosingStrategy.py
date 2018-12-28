@@ -1,10 +1,14 @@
 import numpy as np
 import fractions
+import multiprocessing
 
 
 class HarmonicsChoosingStrategy(object):
 
-    def __init__(self, context):
+    def __init__(self, context, n_jobs=None):
+        self.n_jobs = n_jobs
+        if n_jobs is None:
+            self.n_jobs = multiprocessing.cpu_count()
         self.context = context
 
     def choose(self, y, components):
@@ -24,10 +28,87 @@ class HarmonicsChoosingStrategy(object):
             )
         return best_model.params.components.seasonal_harmonics
 
+    def initial_harmonics_to_check(self, max_harmonic):
+        first_harmonics_to_check = 6
+        harmonic_to_check = np.min([max_harmonic, first_harmonics_to_check])
+        parallel = np.max([self.n_jobs, 3])
+        range_max = harmonic_to_check + int(np.ceil(parallel / 2))
+        range_max = np.max([range_max, 2 + parallel])
+        range_max = np.min([range_max, max_harmonic + 1])
+        return range(
+            np.max([range_max - parallel, 2]),
+            range_max
+        )
+
+    def next_harmonics_to_check(self, max_harmonic, previously_checked=None, chosen_harmonic=None):
+        if previously_checked is None or len(previously_checked) == 0:
+            return self.initial_harmonics_to_check(max_harmonic)
+        if chosen_harmonic < max_harmonic and chosen_harmonic == np.max(previously_checked):
+            # we have chosen the most complex model, we need to check even more complex ones
+            return range(
+                chosen_harmonic + 1,
+                np.min([chosen_harmonic + self.n_jobs, max_harmonic]) + 1
+            )
+
+        if chosen_harmonic > 2 and chosen_harmonic == np.min(previously_checked):
+            # we have chosen the least complex model, we need to check even simpler models
+            return range(
+                np.max([2, chosen_harmonic - self.n_jobs]),
+                chosen_harmonic
+            )
+        if chosen_harmonic == 1 and np.min(previously_checked) > 2 and max_harmonic > 1:
+            # we are still on the initial model, check simple models
+            return range(
+                np.max([2, np.min(previously_checked) - self.n_jobs]),
+                np.min(previously_checked)
+            )
+        return []
+
     def choose_for_season(self, season_index, max_harmonic, best_model_so_far):
         # assertion: best_model_so_far uses harmonics=1 for the seasonality being analysed
+        if max_harmonic == 1:  # nothing to search
+            return best_model_so_far
 
-        # TODO, this function is sooo ugly
+        best_model = best_model_so_far
+        best_aic = np.inf
+        previously_checked_harmonics = np.asarray([])
+        harmonics_range = self.next_harmonics_to_check(max_harmonic)
+
+        while len(harmonics_range) > 0:
+            self._season_index = season_index
+            self._y = best_model_so_far.y
+            self._components = best_model_so_far.params.components
+            pool = multiprocessing.pool.Pool(processes=self.n_jobs)
+            models = pool.map(self._fit_model, harmonics_range)
+            for model in models:
+                if model.aic < best_aic:
+                    best_model = model
+                    best_aic = model.aic
+            chosen_harmonics = best_model.params.components.seasonal_harmonics[season_index]
+            previously_checked_harmonics = np.concatenate([previously_checked_harmonics, harmonics_range])
+            harmonics_range = self.next_harmonics_to_check(
+                max_harmonic=max_harmonic,
+                previously_checked=previously_checked_harmonics,
+                chosen_harmonic=chosen_harmonics,
+            )
+
+        # cleanup
+        self._y = None
+        self._season_index = None
+        self._components = None
+
+        if best_aic > best_model_so_far.aic:
+            return best_model_so_far
+        return best_model
+
+    def _fit_model(self, harmonic_to_check):
+        components = self._components.with_harmonic_for_season(
+            season_index=self._season_index, new_harmonic=harmonic_to_check
+        )
+        return self.context.create_case(components=components).fit(self._y)
+
+    def choose_for_season_serial(self, season_index, max_harmonic, best_model_so_far):
+        # assertion: best_model_so_far uses harmonics=1 for the seasonality being analysed
 
         if max_harmonic == 1:  # nothing to search
             return best_model_so_far
@@ -53,32 +134,32 @@ class HarmonicsChoosingStrategy(object):
             search_direction = -1
             harmonic_to_check = first_harmonics_to_check - 1
             best_model = level_model
-            best_model_aic = level_model.aic_
+            best_model_aic = level_model.aic
 
-            if down_model.aic_ < best_model.aic_:
+            if down_model.aic < best_model_aic:
                 best_model = down_model
-                best_model_aic = down_model.aic_
+                best_model_aic = down_model.aic
                 harmonic_to_check = first_harmonics_to_check - 2
 
-            if up_model.aic_ < best_model.aic_:
+            if up_model.aic < best_model_aic:
                 # in such a case we shall go into more complex models
                 search_direction = 1
                 best_model = up_model
-                best_model_aic = up_model.aic_
+                best_model_aic = up_model.aic
                 harmonic_to_check = first_harmonics_to_check + 2
 
         while harmonic_to_check > 1 and harmonic_to_check <= max_harmonic:
             candidate_model = self.fit_model_like_previous_with_harmonic(
                 best_model_so_far, season_index, harmonic_to_check
             )
-            if candidate_model.aic_ > best_model_aic:
+            if candidate_model.aic > best_model_aic:
                 # AIC stopped getting better
                 break
             best_model = candidate_model
-            best_model_aic = candidate_model.aic_
+            best_model_aic = candidate_model.aic
             harmonic_to_check += search_direction
 
-        if best_model_aic < best_model_so_far.aic_:
+        if best_model_aic < best_model_so_far.aic:
             return best_model
 
         return best_model_so_far
@@ -111,7 +192,7 @@ class HarmonicsChoosingStrategy(object):
 
     @classmethod
     def max_harmonic_dependency_reduction(cls, max_harmonic_proposal, period_length, seasonal_periods):
-        if period_length % 1 != 0:  # TODO really?
+        if period_length % 1 != 0:
             # no dependendencies if period length is float
             return max_harmonic_proposal
 

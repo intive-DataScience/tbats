@@ -38,7 +38,7 @@ class RComparisonBase(object):
         r_predictions = np.asarray(r_summary.rx('fitted')).flatten()
         r_aic = self.get_R_float_or_null(r_model, 'AIC')
 
-        aic = py_model.aic_
+        aic = py_model.aic
 
         if r_aic < aic:
             assert np.isclose(r_aic, aic, atol=0.1)
@@ -89,7 +89,7 @@ class RComparisonBase(object):
 
         r_x0 = np.array((r_model.rx('seed.states')[0])).flatten()
 
-        aic = py_model.aic_
+        aic = py_model.aic
 
         # simple parameters comparison
         self.assert_none_or_close(r_alpha, py_model.params.alpha, atol=atol_small)

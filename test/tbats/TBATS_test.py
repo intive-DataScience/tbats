@@ -92,78 +92,68 @@ class TestTBATS(object):
         y_predicted = fitted_model.forecast(steps=steps)
         assert np.allclose(y_to_predict, y_predicted, atol=0.5)
 
-    def test_seasonality(self):
-        np.random.seed(2342)
-        t = np.array(range(0, 160))
-        y = 5 * np.sin(t * 2 * np.pi / 14) + ((t / 20) ** 1.5 + np.random.normal(size=160) * t / 50) + 10
+    @pytest.mark.parametrize(
+        "seasonal_periods, seasonal_harmonics, starting_values",
+        [
+            [
+                [12], [2], [[1, 2, 0.5, 0.6]]  # s1, s2, s1*, s2*
+            ],
+            [
+                [7, 365], [2, 3], [[1, 2, 0.5, 0.6], [0.5, 0.2, 0.4, 0.1, 0.9, 0.3]]
+            ],
+            [  # non-integer period lengths should also work
+                [7.2, 12.25], [2, 1], [[0.4, 0.7, 0.2, 0.1], [0.9, 0.8]]
+            ],
+            [  # 3 periods
+                [7, 11, 13.2], [2, 4, 3],
+                [[1, 2, 0.5, 0.6], [0.5, 0.2, 0.4, 0.1, 0.9, 0.3, 1.1, 1.2], [-0.1, 0.2, 0.7, 0.6, 0.3, -0.3]]
+            ],
+        ]
+    )
+    def test_fit_predict_trigonometric_seasonal(self, seasonal_periods, seasonal_harmonics, starting_values):
+        """
+        The aim of the test is to check if model is correctly discovering trigonometric series with no noise
+        """
+        T = 100
+        steps = 10
+        l = 3.1
+        x0 = [[l]]
 
-        estimator = TBATS(use_arma_errors=False, seasonal_periods=[14])
-        fitted_model = estimator.fit(y)
-        y_forecasted = fitted_model.forecast(steps=14)
-        # todo add some assertions here
+        # construct trigonometric series
+        y = [l] * T
+        for period in range(0, len(seasonal_periods)):
+            period_length = seasonal_periods[period]
+            period_harmonics = seasonal_harmonics[period]
+            s_harmonic = np.array(starting_values[period])
+            s = s_harmonic[:int(len(s_harmonic) / 2)]
+            s_star = s_harmonic[int(len(s_harmonic) / 2):]
+            x0.append(s_harmonic)
+            lambdas = 2 * np.pi * (np.arange(1, period_harmonics + 1)) / period_length
+            # add periodic impact to y
+            for t in range(0, T):
+                y[t] += np.sum(s)
+                s_prev = s
+                s = s_prev * np.cos(lambdas) + s_star * np.sin(lambdas)
+                s_star = - s_prev * np.sin(lambdas) + s_star * np.cos(lambdas)
 
-    # @pytest.mark.parametrize(
-    #     "seasonal_periods, seasonal_harmonics, starting_values",
-    #     [
-    #         [
-    #             [365], [2], [[1, 2, 0.5, 0.6]]  # s1, s2, s1*, s2*
-    #         ],
-    #         # [
-    #         #     [7, 365], [2, 3], [[1, 2, 0.5, 0.6], [0.5, 0.2, 0.4, 0.1, 0.9, 0.3]]
-    #         # ],
-    #         # [  # non-integer period lengths should also work
-    #         #     [7.2, 12.25], [2, 1], [[0.4, 0.7, 0.2, 0.1], [0.9, 0.8]]
-    #         # ],
-    #         # [  # 3 periods
-    #         #     [7, 11, 13.2], [2, 4, 3],
-    #         #     [[1, 2, 0.5, 0.6], [0.5, 0.2, 0.4, 0.1, 0.9, 0.3, 1.1, 1.2], [-0.1, 0.2, 0.7, 0.6, 0.3, -0.3]]
-    #         # ],
-    #     ]
-    # )
-    # def test_fit_predict_trigonometric_seasonal(self, seasonal_periods, seasonal_harmonics, starting_values):
-    #     """
-    #     The aim of the test is to check if model is correctly discovering trigonometric series with no noise
-    #     """
-    #     T = 100
-    #     steps = 10
-    #     l = 3.1
-    #     x0 = [[l]]
-    #
-    #     # construct trigonometric series
-    #     y = [l] * T
-    #     for period in range(0, len(seasonal_periods)):
-    #         period_length = seasonal_periods[period]
-    #         period_harmonics = seasonal_harmonics[period]
-    #         s_harmonic = np.array(starting_values[period])
-    #         s = s_harmonic[:int(len(s_harmonic) / 2)]
-    #         s_star = s_harmonic[int(len(s_harmonic) / 2):]
-    #         x0.append(s_harmonic)
-    #         lambdas = 2 * np.pi * (np.arange(1, period_harmonics + 1)) / period_length
-    #         # add periodic impact to y
-    #         for t in range(0, T):
-    #             y[t] += np.sum(s)
-    #             s_prev = s
-    #             s = s_prev * np.cos(lambdas) + s_star * np.sin(lambdas)
-    #             s_star = - s_prev * np.sin(lambdas) + s_star * np.cos(lambdas)
-    #
-    #     x0 = np.concatenate(x0)
-    #
-    #     y_to_fit = y[:(T - steps)]
-    #     y_to_predict = y[(T - steps):]
-    #
-    #     #TODO this test is not passing if boxcox=True as there are issues in re-boxcoxing of x0
-    #     estimator = TBATS(use_arma_errors=False, use_trend=False, seasonal_periods=seasonal_periods)
-    #     fitted_model = estimator.fit(y_to_fit)
-    #     resid = fitted_model.resid
-    #
-    #     # seasonal model should be discovered
-    #     assert np.array_equal(seasonal_periods, fitted_model.params.components.seasonal_periods)
-    #     assert np.array_equal(seasonal_harmonics, fitted_model.params.components.seasonal_harmonics)
-    #
-    #     # sequence should be modelled properly
-    #     assert np.allclose([0] * (T - steps), resid, atol=0.2)
-    #     assert np.allclose(y_to_fit, fitted_model.y_hat, atol=0.2)
-    #
-    #     # forecast should be close to actual
-    #     y_predicted = fitted_model.forecast(steps=steps)
-    #     assert np.allclose(y_to_predict, y_predicted, 0.2)
+        x0 = np.concatenate(x0)
+
+        y_to_fit = y[:(T - steps)]
+        y_to_predict = y[(T - steps):]
+
+        estimator = TBATS(use_box_cox=False, use_arma_errors=False, use_trend=False, seasonal_periods=seasonal_periods)
+        fitted_model = estimator.fit(y_to_fit)
+        resid = fitted_model.resid
+
+        # seasonal model should be discovered
+        assert np.array_equal(seasonal_periods, fitted_model.params.components.seasonal_periods)
+        # at least as many harmonics as in original series
+        assert np.all(np.asarray(seasonal_harmonics) <= fitted_model.params.components.seasonal_harmonics)
+
+        # sequence should be modelled properly
+        assert np.allclose([0] * (T - steps), resid, atol=0.2)
+        assert np.allclose(y_to_fit, fitted_model.y_hat, atol=0.2)
+
+        # forecast should be close to actual
+        y_predicted = fitted_model.forecast(steps=steps)
+        assert np.allclose(y_to_predict, y_predicted, 0.2)

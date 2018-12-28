@@ -52,7 +52,7 @@ Reading model details
 # Time series analysis
 print(fitted_model.y_hat) # in sample prediction
 print(fitted_model.resid) # in sample residuals
-print(fitted_model.aic())
+print(fitted_model.aic)
 
 # Reading model parameters
 print(fitted_model.params.alpha)

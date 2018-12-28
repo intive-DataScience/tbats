@@ -21,7 +21,7 @@ class Model(object):
         self.resid_boxcox = None
         self.resid = None
         self.x_last = None
-        self.aic_ = np.inf
+        self.aic = np.inf
 
     def likelihood(self):
         if not self.is_fitted:
@@ -43,7 +43,7 @@ class Model(object):
 
         return likelihood_part - boxcox_part
 
-    def aic(self):
+    def calculate_aic(self):
         likelihood = self.likelihood()
         if likelihood == np.inf:
             return np.inf
@@ -68,7 +68,6 @@ class Model(object):
         # TODO add confidence intervals
 
         # initialize matrices
-        # next_x = x[:, len(self.y)]
         yw_hat = np.asarray([0.0] * steps)
         x = self.x_last
 
@@ -121,13 +120,15 @@ class Model(object):
         self.x = x
 
         self.is_fitted = True
-        self.aic_ = self.aic()
+        self.aic = self.calculate_aic()
         return self
 
     def fit(self, y):
+        return self._fit_to_observations(y, self.params.x0)
+
+    def _fit_to_observations(self, y, starting_x):
         self.warnings = []
         self.is_fitted = False
-        params = self.params
 
         if self.validate_input:
             try:
@@ -137,7 +138,7 @@ class Model(object):
                 self.context.get_exception_handler().exception("y series is invalid",
                                                                error.InputArgsException,
                                                                previous_exception=validation_exception)
-
+        self.y = y
         yw = self.boxcox(y)
 
         matrix_builder = self.matrix
@@ -148,7 +149,7 @@ class Model(object):
         # initialize matrices
         yw_hat = np.asarray([0.0] * len(y))
         # x = np.matrix(np.zeros((len(params.x0), len(yw) + 1)))
-        x = params.x0
+        x = starting_x
 
         with warnings.catch_warnings():
             warnings.filterwarnings('error')
@@ -165,13 +166,14 @@ class Model(object):
         # store fit results
         self.x_last = x
         self.resid_boxcox = yw - yw_hat
-        self.y = self.inv_boxcox(yw)
         self.y_hat = self.inv_boxcox(yw_hat)
         self.resid = self.y - self.y_hat
 
         self.is_fitted = True
-        self.aic_ = self.aic()
+        self.aic = self.calculate_aic()
+
         return self
+
 
     def boxcox(self, y):
         yw = y
@@ -249,5 +251,5 @@ class Model(object):
     def summary(self):
         str = ''
         str += self.params.summary() + '\n'
-        str += 'AIC %f' % self.aic_
+        str += 'AIC %f' % self.aic
         return str

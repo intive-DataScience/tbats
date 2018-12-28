@@ -141,10 +141,8 @@ class TestTBATSComparisonR(RComparisonBase):
 
         r_summary, r_model = self.r_tbats(y_for_train, components)
 
-        estimator = TBATS(**components)
+        estimator = TBATS(n_jobs=1, **components)
         py_model = estimator.fit(y_for_train)
-
-        # self.compare_model(r_summary, r_model, py_model)
 
         self.assert_py_model_is_not_worse(y_for_train, r_summary, r_model, py_model)
         self.assert_forecast_is_not_worse(y_to_forecast, r_model, py_model)

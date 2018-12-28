@@ -8,6 +8,6 @@ class Case(AbstractCase):
         if len(self.components.seasonal_periods) > 0:
             # Try non-seasonal model without ARMA
             model_candidate = self.fit_case(y, self.components.without_seasonal_periods().without_arma())
-            if model_candidate.aic_ < model.aic_:
+            if model_candidate.aic < model.aic:
                 model = model_candidate
         return model

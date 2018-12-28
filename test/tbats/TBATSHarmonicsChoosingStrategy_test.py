@@ -8,13 +8,12 @@ class TestTBATSHarmonicsChoosingStrategy(object):
     class ModelMock:
         def __init__(self, y, params, aic_score):
             self.params = params
-            self.aic_score = aic_score
             self.y = y
-            self.aic_ = aic_score
+            self.aic = aic_score
             self.is_fitted = True
 
-        def aic(self):
-            return self.aic_score
+        def calculate_aic(self):
+            return self.aic
 
     class CaseMock:
         def __init__(self, components, aic_score):
@@ -125,7 +124,7 @@ class TestTBATSHarmonicsChoosingStrategy(object):
         ]
     )
     def test_choose(self, components, aic_score_map, expected_harmonics):
-        strategy = HarmonicsChoosingStrategy(self.ContextMock(aic_score_map))
+        strategy = HarmonicsChoosingStrategy(self.ContextMock(aic_score_map), n_jobs=1)
         harmonics = strategy.choose([1, 2, 3], Components(**components))
         assert np.array_equal(expected_harmonics, harmonics)
 
@@ -169,7 +168,7 @@ class TestTBATSHarmonicsChoosingStrategy(object):
         ]
     )
     def test_calculate_max(self, seasonal_periods, expected_max_harmonics):
-        strategy = HarmonicsChoosingStrategy(Context())
+        strategy = HarmonicsChoosingStrategy(Context(), n_jobs=1)
         harmonics = strategy.calculate_max(np.array(seasonal_periods))
         assert np.array_equal(expected_max_harmonics, harmonics)
 
@@ -213,9 +212,90 @@ class TestTBATSHarmonicsChoosingStrategy(object):
         ]
     )
     def test_calculate_max_better(self, seasonal_periods, expected_max_harmonics):
-        strategy = HarmonicsChoosingStrategy(Context())
+        strategy = HarmonicsChoosingStrategy(Context(), n_jobs=1)
         harmonics = strategy.calculate_max(
             np.asarray(seasonal_periods),
             HarmonicsChoosingStrategy.max_harmonic_dependency_reduction_better
         )
         assert np.array_equal(expected_max_harmonics, harmonics)
+
+    @pytest.mark.parametrize(
+        "n_jobs, max_harmonic, expected_range",
+        [
+            [  # no harmonics to check, return empty array
+                12, 1, [],
+            ],
+            [  # only 1 harmonic to check
+                12, 2, [2],
+            ],
+            [  # 5 harmonics to check and 5 cores, should contain all harmonics
+                5, 6, range(2, 7),
+            ],
+            [  # 32 harmonics to check and 32 cores, should contain all harmonics
+                32, 33, range(2, 34),
+            ],
+            [  # only 1 core and 1 harmonic to check
+                1, 2, range(2, 3)
+            ],
+            [  # only 1 core but needs to check those 3 models anyway
+                1, 12, range(5, 8)
+            ],
+            [  # only 1 core, will check 3 most complex models
+                1, 5, range(3, 6)
+            ],
+            [  # 5 cores, should check models around 6
+                5, 16, range(4, 9)
+            ],
+            [  # 6 cores, should check models around 6
+                6, 16, range(3, 9)
+            ],
+            [  # 8 cores, should check all models around 6
+                8, 11, range(2, 10)
+            ],
+            [  # 4 cores, range should cover all of the most complex cases
+                4, 7, range(4, 8)
+            ],
+        ]
+    )
+    def test_initial_harmonics_to_check(self, n_jobs, max_harmonic, expected_range):
+        strategy = HarmonicsChoosingStrategy(Context(), n_jobs=n_jobs)
+        obtained_range = strategy.initial_harmonics_to_check(max_harmonic)
+        assert np.array_equal(expected_range, obtained_range)
+
+    @pytest.mark.parametrize(
+        "n_jobs, max_harmonic, chosen_harmonic, previous_range, expected_range",
+        [
+            [  # no harmonics to check, return empty array
+                1, 1, 1, [], [],
+            ],
+            [  # previously checked are 4 and 3, we should check 2 now
+                1, 4, 3, [3, 4], [2],
+            ],
+            [  # we should check higher orders of harmonics
+                2, 10, 7, [5, 6, 7], [8, 9],
+            ],
+            [  # we should check all lower orders of harmonics
+                8, 10, 5, [5, 6, 7], [2, 3, 4],
+            ],
+            [  # nothing to check, we already checked lower and higher order models
+                8, 10, 6, [5, 6, 7], [],
+            ],
+            [  # we have already chosen the simplest model
+                8, 10, 2, [2, 3, 4, 5, 6, 7], [],
+            ],
+            [  # we have already chosen the most complex model
+                8, 4, 4, [2, 3, 4], [],
+            ],
+            [  # we are still choosing the simplest model, check lower level harmonics
+                2, 12, 1, [5, 6, 7], [3, 4],
+            ],
+        ]
+    )
+    def test_next_harmonics_to_check(self, n_jobs, max_harmonic, chosen_harmonic, previous_range, expected_range):
+        strategy = HarmonicsChoosingStrategy(Context(), n_jobs=n_jobs)
+        obtained_range = strategy.next_harmonics_to_check(
+            max_harmonic=max_harmonic,
+            previously_checked=previous_range,
+            chosen_harmonic=chosen_harmonic
+        )
+        assert np.array_equal(expected_range, obtained_range)
