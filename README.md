@@ -81,8 +81,6 @@ R forecast package comparison tests. Those DO NOT RUN with default test command,
 python setup.py test_r
 ```
 
-
-
 ## Comparison to R implementation
 
 Python implementation is meant to be as much as possible equivalent to R implementation in forecast package.
