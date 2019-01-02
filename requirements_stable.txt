@@ -1,3 +1,5 @@
+atomicwrites==1.2.1
+attrs==18.2.0
 bleach==3.0.2
 certifi==2018.11.29
 chardet==3.0.4
@@ -7,13 +9,17 @@ docutils==0.14
 idna==2.8
 Jinja2==2.10
 MarkupSafe==1.1.0
+more-itertools==4.3.0
 numpy==1.15.4
 pandas==0.23.4
 patsy==0.5.1
 pip-tools==3.2.0
 pkginfo==1.4.2
+pluggy==0.8.0
 pmdarima==1.0.0
+py==1.7.0
 Pygments==2.3.1
+pytest==4.0.2
 python-dateutil==2.7.5
 pytz==2018.7
 readme-renderer==24.0
@@ -25,7 +31,7 @@ scipy==1.2.0
 six==1.12.0
 sklearn==0.0
 statsmodels==0.9.0
--e git+git@github.com:intive-DataScience/tbats.git@5cac91d9845b9b6513b90b0a90a81355cd392bf8#egg=tbats
+-e git+git@github.com:intive-DataScience/tbats.git@d7800e52abd3df1d3eb0f13ac9a9e25f9bfd00c3#egg=tbats
 tqdm==4.28.1
 twine==1.12.1
 urllib3==1.24.1
