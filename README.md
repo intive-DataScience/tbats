@@ -10,8 +10,7 @@ Package provides BATS and TBATS time series forecasting methods described in:
 From pypi:
 
 ```bash
-pip install --index-url https://test.pypi.org/simple/ tbats
-#pip install tbats
+pip install tbats
 ```
 
 Import via:

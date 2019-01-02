@@ -43,13 +43,14 @@ class RTestCommand(TestCommand):
 
 setuptools.setup(
     name='tbats',
-    version='0.9.1',
-    packages=setuptools.find_packages(),
+    version='1.0.2',
+    packages=setuptools.find_packages(exclude=('test', 'test_R')),
     url='https://github.com/intive-DataScience/tbats',
     license='MIT License',
     author='Grzegorz Skorupa (intive)',
     author_email='grzegorz.skorupa@intive.com',
     description='BATS and TBATS for time series forecasting',
+    long_description=long_description,
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
