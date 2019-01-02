@@ -8,7 +8,7 @@ class Case(AbstractCase):
 
         Parameters
         ----------
-        y: array-like
+        y: array-like of floats
             Time series
 
         Returns

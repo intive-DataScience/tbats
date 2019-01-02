@@ -77,7 +77,7 @@ class RComparisonBase(object):
         r_alpha = self.get_R_float_or_null(r_model, 'alpha')
         r_beta = self.get_R_float_or_null(r_model, 'beta')
         r_damping_parameter = self.get_R_float_or_null(r_model, 'damping.parameter')
-        r_boxcox_lambda = self.get_R_float_or_null(r_model, 'lambda')
+        r_box_cox_lambda = self.get_R_float_or_null(r_model, 'lambda')
         r_aic = self.get_R_float_or_null(r_model, 'AIC')
         r_gamma = self.get_R_array_or_null(r_model, 'gamma.values')
         r_gamma_1 = self.get_R_array_or_null(r_model, 'gamma.one.values')
@@ -95,7 +95,7 @@ class RComparisonBase(object):
         self.assert_none_or_close(r_alpha, py_model.params.alpha, atol=atol_small)
         self.assert_none_or_close(r_beta, py_model.params.beta, atol=atol_small)
         self.assert_none_or_close(r_damping_parameter, py_model.params.phi, atol=atol_small)
-        self.assert_none_or_close(r_boxcox_lambda, py_model.params.boxcox_lambda, atol=atol_small)
+        self.assert_none_or_close(r_box_cox_lambda, py_model.params.box_cox_lambda, atol=atol_small)
 
         self.assert_array_or_close(r_seasonal_periods, py_model.params.components.seasonal_periods)
         if isinstance(py_model, TBATSModel):

@@ -48,13 +48,13 @@ class TestBATSModel(object):
             ],
             [  # box cox lambda check should fail
                 dict(use_box_cox=True),
-                dict(alpha=0.3, boxcox_lambda=2.0),
+                dict(alpha=0.3, box_cox_lambda=2.0),
                 False,
                 False,
             ],
             [  # box cox lambda check should fail
                 dict(use_box_cox=True, box_cox_bounds=(-1, 0)),
-                dict(alpha=0.1, boxcox_lambda=0.5),
+                dict(alpha=0.1, box_cox_lambda=0.5),
                 False,
                 False,
             ],
@@ -275,13 +275,13 @@ class TestBATSModel(object):
             Components(use_trend=True, use_damped_trend=False, use_arma_errors=False, use_box_cox=True),
             alpha=0.0,
             beta=0.02,
-            boxcox_lambda=0,  # applies np.log
+            box_cox_lambda=0,  # applies np.log
             x0=[2.8222853209364787, 0.08922172250433948],
         )
         model = self.create_model(params)
         model.fit(y)
 
-        assert model.params.boxcox_lambda == 0
+        assert model.params.box_cox_lambda == 0
         assert np.allclose(expected_y_hat, model.y_hat)
         assert np.allclose(np.array(y) - np.array(expected_y_hat), model.resid)
         assert not np.allclose(model.resid, model.resid_boxcox)

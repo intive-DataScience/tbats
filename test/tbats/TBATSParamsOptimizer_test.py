@@ -29,7 +29,7 @@ class TestTBATSParamsOptimizer(object):
         c = Components(**components)
         p = ModelParams(c, **params)
         m = ParamsOptimizer(self.context)
-        x0 = m.calculate_seed_x0(y, p)
+        x0 = m._calculate_seed_x0(y, p)
         assert np.allclose(expected, x0)
 
     def test_optimization_with_seasonal_period(self):

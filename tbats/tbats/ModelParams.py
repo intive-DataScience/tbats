@@ -16,11 +16,11 @@ class ModelParams(AbstractModelParams):
         Vector holds 2 gamma parameters for season 1, then 2 gamma parameters for season 2, ...
     """
 
-    def __init__(self, components, alpha, beta=None, phi=None, boxcox_lambda=None,
+    def __init__(self, components, alpha, beta=None, phi=None, box_cox_lambda=None,
                  gamma_params=None,
                  ar_coefs=None, ma_coefs=None, x0=None):
         """See parent class documentation for details"""
-        super().__init__(components=components, alpha=alpha, beta=beta, phi=phi, boxcox_lambda=boxcox_lambda,
+        super().__init__(components=components, alpha=alpha, beta=beta, phi=phi, box_cox_lambda=box_cox_lambda,
                          gamma_params=gamma_params, ar_coefs=ar_coefs, ma_coefs=ma_coefs, x0=x0)
 
     @classmethod
@@ -54,13 +54,13 @@ class ModelParams(AbstractModelParams):
         if len(components.seasonal_periods) > 0:
             gamma_params = [0.0] * components.gamma_params_amount()
 
-        boxcox_lambda = cls.find_initial_boxcox_lambda(y, components)
+        box_cox_lambda = cls.find_initial_box_cox_lambda(y, components)
 
         # note that ARMA and x0 will be initialized to 0's in constructor
         return cls(components=components,
                    alpha=alpha, beta=beta, phi=phi,
                    gamma_params=gamma_params,
-                   boxcox_lambda=boxcox_lambda)
+                   box_cox_lambda=box_cox_lambda)
 
     def seasonal_components_amount(self):
         """TBATS requires this many seed state values for seasonalities"""

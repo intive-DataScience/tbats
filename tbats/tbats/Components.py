@@ -113,3 +113,6 @@ class Components(AbstractComponents):
         self.seasonal_harmonics = ArrayHelper.to_array(seasonal_harmonics, int)
         if len(self.seasonal_harmonics) != len(self.seasonal_periods):
             self.seasonal_harmonics = np.asarray([1] * len(self.seasonal_periods), int)
+
+    def _seasonal_summary(self):
+        return "Seasonal harmonics %s\n" % self.seasonal_harmonics

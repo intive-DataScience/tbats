@@ -1,4 +1,4 @@
 from .Guerrero import Guerrero
-from .BoxCox import find_boxcox_lambda, boxcox, inv_boxcox
+from .BoxCox import find_box_cox_lambda, boxcox, inv_boxcox
 
-__all__ = ['find_boxcox_lambda', 'boxcox', 'inv_boxcox', 'Guerrero']
+__all__ = ['find_box_cox_lambda', 'boxcox', 'inv_boxcox', 'Guerrero']

@@ -16,7 +16,9 @@ class Estimator(BaseEstimator):
         Fit to y and select best performing model based on AIC criterion.
     """
 
-    def __init__(self, context, use_box_cox=None, use_trend=None, use_damped_trend=None,
+    def __init__(self, context,
+                 use_box_cox=None, box_cox_bounds=(0, 1),
+                 use_trend=None, use_damped_trend=None,
                  seasonal_periods=None, use_arma_errors=True,
                  n_jobs=None):
         """ Class constructor
@@ -28,6 +30,8 @@ class Estimator(BaseEstimator):
         use_box_cox: bool or None, optional (default=None)
             If Box-Cox transformation of original series should be applied.
             When None both cases shall be considered and better is selected by AIC.
+        box_cox_bounds: tuple, shape=(2,), optional (default=(0, 1))
+            Minimal and maximal Box-Cox parameter values.
         use_trend: bool or None, optional (default=None)
             Indicates whether to include a trend or not.
             When None both cases shall be considered and better is selected by AIC.
@@ -55,6 +59,7 @@ class Estimator(BaseEstimator):
 
         self.seasonal_periods = self._normalize_seasonal_periods(seasonal_periods)
         self.use_box_cox = use_box_cox
+        self.box_cox_bounds = box_cox_bounds
         self.use_arma_errors = use_arma_errors
         self.use_trend = use_trend
         if use_trend is False:
@@ -159,6 +164,7 @@ class Estimator(BaseEstimator):
 
         base_combination = {
             'use_box_cox': self.__prepare_component_boolean_combinations(use_box_cox),
+            'box_cox_bounds': [self.box_cox_bounds],
             'use_arma_errors': [self.use_arma_errors],
             'seasonal_periods': [self.seasonal_periods],
         }
@@ -192,7 +198,9 @@ class Estimator(BaseEstimator):
 
         base_combination = {
             'use_box_cox': self.__prepare_component_boolean_combinations(use_box_cox),
+            'box_cox_bounds': [self.box_cox_bounds],
             'use_arma_errors': [self.use_arma_errors],
+            'seasonal_periods': [[]],
         }
 
         if self.use_trend is not True:  # False or None

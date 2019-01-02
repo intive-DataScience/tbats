@@ -96,11 +96,7 @@ class Case(object):
         Returns
         -------
         Model
-            optimized model
+            optimal model
         """
         optimization = self.context.create_params_optimizer()
-        optimization = optimization.optimize(y, model_params)
-        model = optimization.optimal_model()
-        if not optimization.converged():
-            model.add_warning("Optimization did not converge")
-        return model
+        return optimization.optimize(y, model_params).optimal_model()

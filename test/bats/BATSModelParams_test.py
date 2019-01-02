@@ -16,7 +16,7 @@ class TestBATSModelParams(object):
             ],
             [
                 dict(use_trend=True, use_box_cox=True),
-                dict(alpha=0.7, beta=0.5, boxcox_lambda=0.3),
+                dict(alpha=0.7, beta=0.5, box_cox_lambda=0.3),
                 [0.7, 0.3, 0.5],
             ],
             [
@@ -40,15 +40,15 @@ class TestBATSModelParams(object):
     def test_with_vector_values(self):
         c = Components(use_trend=True, use_damped_trend=True,
                        use_arma_errors=True, use_box_cox=True, seasonal_periods=[7, 30], p=1, q=2)
-        p = ModelParams(c, alpha=0.1, boxcox_lambda=1.4, beta=0.2, phi=0.3, gamma_params=[0.4, 0.5],
+        p = ModelParams(c, alpha=0.1, box_cox_lambda=1.4, beta=0.2, phi=0.3, gamma_params=[0.4, 0.5],
                         ar_coefs=[-0.3], ma_coefs=[-0.4, 0.6])
         v = p.to_vector()
         assert np.array_equal([0.1, 1.4, 0.2, 0.3, 0.4, 0.5, -0.3, -0.4, 0.6], v)
 
-        p = ModelParams(c, alpha=0.9, boxcox_lambda=1.4)
+        p = ModelParams(c, alpha=0.9, box_cox_lambda=1.4)
         p = p.with_vector_values(v)
         assert p.alpha == 0.1
-        assert p.boxcox_lambda == 1.4
+        assert p.box_cox_lambda == 1.4
         assert p.beta == 0.2
         assert p.phi == 0.3
         assert np.array_equal([0.4, 0.5], p.gamma_params)

@@ -42,13 +42,13 @@ class TestBoxCox(object):
         y = np.exp(
             np.random.uniform(size=100) + np.array(range(40, 140)) / 20
         )
-        lam = transformation.find_boxcox_lambda(y, bounds=(0, 1))
+        lam = transformation.find_box_cox_lambda(y, bounds=(0, 1))
         assert np.isclose(0.031759, lam, atol=1e-4)
 
     def test_lambda_finding_2(self):
         np.random.seed(49385)
         y = (np.random.uniform(size=105) + np.array(range(40, 145)) / 20) ** 2
-        lam = transformation.find_boxcox_lambda(y, bounds=(0, 1))
+        lam = transformation.find_box_cox_lambda(y, bounds=(0, 1))
         assert np.isclose(0.4139901, lam, atol=1e-4)
 
     def test_lambda_finding_with_seasonality(self):
@@ -56,5 +56,5 @@ class TestBoxCox(object):
         t = np.array(range(0, 160))
         y = 5 * np.sin(t * 2 * np.pi / 14) + ((t / 20) ** 1.5 + np.random.normal(size=160) * t / 50) + 10
 
-        lam = transformation.find_boxcox_lambda(y, seasonal_periods=[9, 14], bounds=(0, 1))
+        lam = transformation.find_box_cox_lambda(y, seasonal_periods=[9, 14], bounds=(0, 1))
         assert np.isclose(0.690025, lam, atol=1e-4)

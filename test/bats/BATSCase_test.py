@@ -78,5 +78,5 @@ class TestBATSCase(object):
         bats_case = self.create_case(use_box_cox=True)
         model = bats_case.fit(y)
 
-        assert np.isclose(0.4948, model.params.boxcox_lambda, atol=0.01)
+        assert np.isclose(0.4948, model.params.box_cox_lambda, atol=0.01)
         assert not np.allclose(model.resid, model.resid_boxcox)

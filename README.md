@@ -1,8 +1,6 @@
 # BATS and TBATS time series forecasting
 
-**This is an early ALPHA version !!!**
-
-Package provides BATS and TBATS time series forecasting methods:
+Package provides BATS and TBATS time series forecasting methods described in:
 
 > De Livera, A.M., Hyndman, R.J., & Snyder, R. D. (2011), Forecasting time series with complex seasonal patterns using exponential smoothing, Journal of the American Statistical Association, 106(496), 1513-1527.
 
@@ -30,11 +28,11 @@ import numpy as np
 
 np.random.seed(2342)
 t = np.array(range(0, 160))
-y = 5 * np.sin(t * 2 * np.pi / 14) + \
+y = 5 * np.sin(t * 2 * np.pi / 7) + 2 * np.cos(t * 2 * np.pi / 30.5) + \
     ((t / 20) ** 1.5 + np.random.normal(size=160) * t / 50) + 10
 
 # Create estimator
-estimator = TBATS(seasonal_periods=[14])
+estimator = TBATS(seasonal_periods=[14, 30.5])
 
 # Fit model
 fitted_model = estimator.fit(y)
@@ -60,8 +58,9 @@ print(fitted_model.params.beta)
 print(fitted_model.params.x0)
 print(fitted_model.params.components.use_box_cox)
 print(fitted_model.params.components.seasonal_harmonics)
-
 ```
+
+See **examples** directory for more details
 
 ## For Contributors
 
@@ -86,7 +85,7 @@ python setup.py test_r
 
 ## Comparison to R implementation
 
-Python implementation is meant to be as much as possible equivalent to R implementation in forecast package but will not provide exactly the same results as R package.
+Python implementation is meant to be as much as possible equivalent to R implementation in forecast package.
 
 - BATS in R https://www.rdocumentation.org/packages/forecast/versions/8.4/topics/bats
 - TBATS in R: https://www.rdocumentation.org/packages/forecast/versions/8.4/topics/tbats

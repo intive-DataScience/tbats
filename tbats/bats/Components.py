@@ -30,3 +30,6 @@ class Components(AbstractComponents):
     def _normalize_seasons(self, seasonal_periods):
         """Ensures seasons are integer values"""
         return ArrayHelper.to_array(seasonal_periods, int)
+
+    def _seasonal_summary(self):
+        return ""

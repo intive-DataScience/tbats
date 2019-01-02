@@ -5,7 +5,7 @@ import tbats.error as error
 from . import Guerrero
 
 
-def find_boxcox_lambda(y, seasonal_periods=None, bounds=(-1, 2)):
+def find_box_cox_lambda(y, seasonal_periods=None, bounds=(-1, 2)):
     y = c1d(check_array(y, ensure_2d=False, force_all_finite=True, ensure_min_samples=1,
                         copy=False, dtype=np.float64))  # type: np.ndarray
 
@@ -17,7 +17,7 @@ def boxcox(y, lam=None, seasonal_periods=None, bounds=(-1, 2)):
     y = c1d(check_array(y, ensure_2d=False, force_all_finite=True, ensure_min_samples=1,
                         copy=False, dtype=np.float64))  # type: np.ndarray
     if lam is None:
-        lam = find_boxcox_lambda(y, seasonal_periods=seasonal_periods, bounds=bounds)
+        lam = find_box_cox_lambda(y, seasonal_periods=seasonal_periods, bounds=bounds)
     if lam <= 0 and np.any(y <= 0):
         raise error.InputArgsException('y must have only positive values for box-cox transformation.')
     if np.isclose(0.0, lam):

@@ -22,7 +22,7 @@ class ModelParams(object):
         Trend damping parameter value.
         None when trend is not used. 1.0 when trend is used but damping is not.
         Also see components.use_damped_trend.
-    boxcox_lambda: float or None
+    box_cox_lambda: float or None
         Box-Cox transformation lambda parameter value
         None when series is not being transformed.
         Also see components.use_box_cox.
@@ -41,7 +41,8 @@ class ModelParams(object):
     x0: array-like of floats or None
         Seed state for computations consisting of trend, seasonal and ARMA related seeds.
     """
-    def __init__(self, components, alpha, beta=None, phi=None, boxcox_lambda=None,
+
+    def __init__(self, components, alpha, beta=None, phi=None, box_cox_lambda=None,
                  gamma_params=None,
                  ar_coefs=None, ma_coefs=None, x0=None):
         """Holds all parameters needed to calculate model and forecasts
@@ -60,7 +61,7 @@ class ModelParams(object):
             Trend damping parameter value.
             None when damping is not used.
             Also see components.use_damped_trend.
-        boxcox_lambda: float or None
+        box_cox_lambda: float or None
             Box-Cox transformation lambda parameter value
             None when series is not being transformed.
             Also see components.use_box_cox.
@@ -79,9 +80,9 @@ class ModelParams(object):
         """
         self.components = components
         self.alpha = alpha
-        self.boxcox_lambda = None
+        self.box_cox_lambda = None
         if self.components.use_box_cox:
-            self.boxcox_lambda = boxcox_lambda
+            self.box_cox_lambda = box_cox_lambda
         self.beta = None
         self.phi = None
         if self.components.use_trend:
@@ -109,7 +110,7 @@ class ModelParams(object):
         raise NotImplementedError()
 
     @classmethod
-    def find_initial_boxcox_lambda(cls, y, components):
+    def find_initial_box_cox_lambda(cls, y, components):
         """ Chooses starting Box-Cox lambda parameter using Guerrero method.
 
         Parameters
@@ -126,7 +127,7 @@ class ModelParams(object):
         """
         if not components.use_box_cox:
             return None
-        return transformation.find_boxcox_lambda(
+        return transformation.find_box_cox_lambda(
             y,
             seasonal_periods=components.seasonal_periods,
             bounds=components.box_cox_bounds,
@@ -192,7 +193,7 @@ class ModelParams(object):
         ----------
         vector: array-like of floats
             A vector with model parameters. When all parameters are used it consist of:
-            (alpha, boxcox_lambda, beta, phi, gamma parameters, AR coefficients, MA coefficients)
+            (alpha, box_cox_lambda, beta, phi, gamma parameters, AR coefficients, MA coefficients)
             When some components are not used they are also not present in the vector.
 
         Returns
@@ -210,7 +211,7 @@ class ModelParams(object):
             boxcox = vector[offset]
             # recalculate x0 according to changed box-cox parameter
             x0 = transformation.boxcox(
-                transformation.inv_boxcox(x0, self.boxcox_lambda),
+                transformation.inv_boxcox(x0, self.box_cox_lambda),
                 boxcox
             )
 
@@ -236,7 +237,7 @@ class ModelParams(object):
         # offset += self.components.q
 
         return self.__class__(components=self.components,
-                              alpha=alpha, beta=beta, phi=phi, boxcox_lambda=boxcox,
+                              alpha=alpha, beta=beta, phi=phi, box_cox_lambda=boxcox,
                               gamma_params=gamma_params,
                               ar_coefs=ar_coefs, ma_coefs=ma_coefs, x0=x0)
 
@@ -255,7 +256,7 @@ class ModelParams(object):
     def to_vector(self):
         v = [[self.alpha]]
         if self.components.use_box_cox:
-            v.append([self.boxcox_lambda])
+            v.append([self.box_cox_lambda])
         if self.components.use_trend:
             v.append([self.beta])
         if self.components.use_damped_trend:
@@ -284,20 +285,21 @@ class ModelParams(object):
         return len(self.x0) + amount + self.components.gamma_params_amount() + self.components.arma_length()
 
     def is_box_cox_in_bounds(self):
-        return self.components.is_box_cox_in_bounds(self.boxcox_lambda)
+        return self.components.is_box_cox_in_bounds(self.box_cox_lambda)
 
     def summary(self):
-        s = self.components.summary() + '\n'
-        if not self.boxcox_lambda is None:
-            s += 'Box-Cox Lambda %f\n' % self.boxcox_lambda
-        s += 'Alpha: %f\n' % self.alpha
+        s = self.components.summary()
+        if not self.box_cox_lambda is None:
+            s += 'Box-Cox Lambda %f\n' % self.box_cox_lambda
+        s += 'Smoothing (Alpha): %f\n' % self.alpha
         if not self.beta is None:
             s += 'Trend (Beta): %f\n' % self.beta
         if not self.phi is None:
             s += 'Damping Parameter (Phi): %f\n' % self.phi
         s += 'Seasonal Parameters (Gamma): %s\n' % self.gamma_params
-        s += 'AR %s\n' % self.ar_coefs
-        s += 'MA %s' % self.ma_coefs
+        s += 'AR coefficients %s\n' % self.ar_coefs
+        s += 'MA coefficients %s\n' % self.ma_coefs
+        s += 'Seed vector %s\n' % self.x0
         return s
 
     def __init_arma(self, ar_coefs=None, ma_coefs=None):

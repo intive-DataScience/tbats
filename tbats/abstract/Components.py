@@ -82,6 +82,10 @@ class Components(object):
         # abstract method
         raise NotImplementedError()
 
+    def _seasonal_summary(self):
+        # abstract method
+        raise NotImplementedError()
+
     def arma_length(self):
         """Returns amount of ARMA(p,q) parameters"""
         return self.p + self.q
@@ -98,7 +102,8 @@ class Components(object):
         s += "Use trend: %r\n" % self.use_trend
         s += "Use damped trend: %r\n" % self.use_damped_trend
         s += "Seasonal periods: %s\n" % self.seasonal_periods
-        s += "ARMA errors (p, q): (%d, %d)" % (self.p, self.q)
+        s += self._seasonal_summary()
+        s += "ARMA errors (p, q): (%d, %d)\n" % (self.p, self.q)
         return s
 
     def with_seasonal_periods(self, seasonal_periods):

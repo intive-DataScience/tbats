@@ -162,7 +162,7 @@ class Model(object):
 
         boxcox_part = 0
         if self.params.components.use_box_cox:
-            boxcox_part = 2 * (self.params.boxcox_lambda - 1) * np.sum(np.log(self.y))
+            boxcox_part = 2 * (self.params.box_cox_lambda - 1) * np.sum(np.log(self.y))
 
         return likelihood_part - boxcox_part
 
@@ -226,13 +226,13 @@ class Model(object):
     def _boxcox(self, y):
         yw = y
         if self.params.components.use_box_cox:
-            yw = transformation.boxcox(y, lam=self.params.boxcox_lambda)
+            yw = transformation.boxcox(y, lam=self.params.box_cox_lambda)
         return yw
 
     def _inv_boxcox(self, yw):
         y = yw
         if self.params.components.use_box_cox:
-            y = transformation.inv_boxcox(yw, lam=self.params.boxcox_lambda)
+            y = transformation.inv_boxcox(yw, lam=self.params.box_cox_lambda)
         return y
 
     def can_be_admissible(self):
