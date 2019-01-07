@@ -1,5 +1,6 @@
 import numpy as np
 from sklearn.utils.validation import check_array, column_or_1d as c1d
+import scipy.stats as stats
 from numpy.linalg import LinAlgError
 import warnings
 
@@ -91,18 +92,26 @@ class Model(object):
         """
         return self._fit_to_observations(y, self.params.x0)
 
-    def forecast(self, steps=1):
+    def forecast(self, steps=1, confidence_level=None):
         """Forecast for provided amount of steps ahead
+
+        When confidence_level it will also return confidence bounds. Their calculation is valid
+        under assumption that residuals are from normal distribution.
 
         Parameters
         ----------
         steps: int
             Amount of steps to forecast
+        confidence_level: float, optional (default=None)
+            When provided and a value between 0 and 1 also confidence bounds shall be returned for provided level.
+            If None (default), confidence intervals will not be calculated.
 
         Returns
         -------
         array-like:
             Forecasts
+        dict:
+            Confidence bounds, present only when confidence_level is provided
         """
         if not self.is_fitted:
             self.context.get_exception_handler().exception(
@@ -119,8 +128,6 @@ class Model(object):
         F = self.matrix.make_F_matrix()
         w = self.matrix.make_w_vector()
 
-        # TODO add confidence intervals
-
         # initialize matrices
         yw_hat = np.asarray([0.0] * steps)
         x = self.x_last
@@ -130,7 +137,11 @@ class Model(object):
             x = F @ x
 
         y_hat = self._inv_boxcox(yw_hat)
-        return y_hat
+
+        if confidence_level is None:
+            return y_hat
+
+        return y_hat, self._calculate_confidence_intervals(y_hat, confidence_level)
 
     def summary(self):
         """Returns model summary containing all parameter values.
@@ -234,6 +245,49 @@ class Model(object):
         if self.params.components.use_box_cox:
             y = transformation.inv_boxcox(yw, lam=self.params.box_cox_lambda)
         return y
+
+    def _calculate_confidence_intervals(self, predictions, level):
+        """Calculates confidence intervals
+
+        Parameters
+        ----------
+        predictions: array-like
+            Predictions from the model
+        level: float
+            Confidence level as a number between 0 and 1.
+            For example 0.95 denotes 95% confidence interval.
+
+        Returns
+        -------
+        dict
+            mean (predictions), lower_bound, upper_bound, std, calculated_for_level
+        -------
+
+        """
+        F = self.matrix.make_F_matrix()
+        g = self.matrix.make_g_vector()
+        w = self.matrix.make_w_vector()
+
+        c = np.asarray([1.0] * len(predictions))
+        f_running = np.identity(F.shape[1])
+        for step in range(1, len(predictions)):
+            c[step] = w @ f_running @ g
+            f_running = f_running @ F
+        variance_multiplier = np.cumsum(c * c)
+
+        base_variance = np.sum(self.resid_boxcox * self.resid_boxcox) / len(self.y)
+        variance = base_variance * variance_multiplier
+        std = np.sqrt(variance)
+
+        z_scores = std * np.abs(stats.norm.ppf((1 - level) / 2))
+
+        return dict(
+            mean=predictions,
+            lower_bound=self._inv_boxcox(self._boxcox(predictions) - z_scores),
+            upper_bound=self._inv_boxcox(self._boxcox(predictions) + z_scores),
+            std=std,
+            calculated_for_level=level,
+        )
 
     def can_be_admissible(self):
         """Tells if model can be admissible."""

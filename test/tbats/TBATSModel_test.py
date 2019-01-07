@@ -185,3 +185,32 @@ class TestTBATSModel(object):
         # forecast should be perfect
         y_predicted = fitted_model.forecast(steps=steps)
         assert np.allclose(y_to_predict, y_predicted)
+
+    def test_forecast_confidence_intervals(self):
+
+        T = 30
+        steps = 5
+
+        period_length = 6
+        y = [0] * T
+        b = b0 = 2.1
+        l = l0 = 1.2
+        alpha = 0.5
+        beta = 0.2
+        np.random.seed(3433)
+        for t in range(0, T):
+            d = np.random.normal()
+            y[t] = l + b + d
+            l = l + b + alpha * d
+            b = b + beta * d
+
+        c = Components(use_arma_errors=False, use_trend=True, use_damped_trend=False, use_box_cox=False)
+        p = ModelParams(c, alpha=0.5, beta=0.2, x0=[1.2, 2.1])
+        model = self.create_model(p)
+        model = model.fit(y)
+        forecasts, confidence_info = model.forecast(steps=4, confidence_level=0.95)
+        assert 0.95 == confidence_info['calculated_for_level']
+        assert np.array_equal(forecasts, confidence_info['mean'])
+        assert np.allclose([59.46379894, 60.44336595, 61.290095, 62.02915299], confidence_info['lower_bound'])
+        assert np.allclose([62.99372071, 64.75218458, 66.64348641, 68.6424593], confidence_info['upper_bound'])
+        assert np.allclose([[0.90050679, 1.09920863, 1.36568617, 1.68709894]], confidence_info['std'])

@@ -43,7 +43,7 @@ class RTestCommand(TestCommand):
 
 setuptools.setup(
     name='tbats',
-    version='1.0.2',
+    version='1.0.3',
     packages=setuptools.find_packages(exclude=('test', 'test_R')),
     url='https://github.com/intive-DataScience/tbats',
     license='MIT License',
