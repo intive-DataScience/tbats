@@ -25,9 +25,11 @@ def boxcox(y, lam=None, seasonal_periods=None, bounds=(-1, 2)):
     return (np.sign(y) * (np.abs(y) ** lam) - 1) / lam
 
 
-def inv_boxcox(y, lam):
+def inv_boxcox(y, lam, force_valid=False):
     y = c1d(check_array(y, ensure_2d=False, force_all_finite=True, ensure_min_samples=1,
                         copy=False, dtype=np.float64))  # type: np.ndarray
+    if lam < 0 and force_valid:
+        y[y > -1 / lam] = -1 / lam
     if lam < 0 and np.any(y > -1 / lam):
         raise error.InputArgsException('Not possible to transform back such y values.')
     if np.isclose(0.0, lam):

@@ -243,7 +243,7 @@ class Model(object):
     def _inv_boxcox(self, yw):
         y = yw
         if self.params.components.use_box_cox:
-            y = transformation.inv_boxcox(yw, lam=self.params.box_cox_lambda)
+            y = transformation.inv_boxcox(yw, lam=self.params.box_cox_lambda, force_valid=True)
         return y
 
     def _calculate_confidence_intervals(self, predictions, level):
@@ -275,17 +275,18 @@ class Model(object):
             f_running = f_running @ F
         variance_multiplier = np.cumsum(c * c)
 
-        base_variance = np.sum(self.resid_boxcox * self.resid_boxcox) / len(self.y)
-        variance = base_variance * variance_multiplier
-        std = np.sqrt(variance)
+        base_variance_boxcox = np.sum(self.resid_boxcox * self.resid_boxcox) / len(self.y)
+        variance_boxcox = base_variance_boxcox * variance_multiplier
+        std_boxcox = np.sqrt(variance_boxcox)
 
-        z_scores = std * np.abs(stats.norm.ppf((1 - level) / 2))
+        z_scores = std_boxcox * np.abs(stats.norm.ppf((1 - level) / 2))
+        lower_bound_boxcox = self._boxcox(predictions) - z_scores
+        upper_bound_boxcox = self._boxcox(predictions) + z_scores
 
         return dict(
             mean=predictions,
-            lower_bound=self._inv_boxcox(self._boxcox(predictions) - z_scores),
-            upper_bound=self._inv_boxcox(self._boxcox(predictions) + z_scores),
-            std=std,
+            lower_bound=self._inv_boxcox(lower_bound_boxcox),
+            upper_bound=self._inv_boxcox(upper_bound_boxcox),
             calculated_for_level=level,
         )
 

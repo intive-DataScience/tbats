@@ -213,4 +213,3 @@ class TestTBATSModel(object):
         assert np.array_equal(forecasts, confidence_info['mean'])
         assert np.allclose([59.46379894, 60.44336595, 61.290095, 62.02915299], confidence_info['lower_bound'])
         assert np.allclose([62.99372071, 64.75218458, 66.64348641, 68.6424593], confidence_info['upper_bound'])
-        assert np.allclose([[0.90050679, 1.09920863, 1.36568617, 1.68709894]], confidence_info['std'])

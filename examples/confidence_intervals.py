@@ -47,5 +47,3 @@ if __name__ == '__main__':
     print('Lower bound:', confidence_info['lower_bound'])
     print('Predictions:', confidence_info['mean'])
     print('Upper bound:', confidence_info['upper_bound'])
-
-    print('Standard deviations:', confidence_info['std'])
