@@ -80,6 +80,7 @@ class HarmonicsChoosingStrategy(object):
             self._components = best_model_so_far.params.components
             pool = multiprocessing.pool.Pool(processes=self.n_jobs)
             models = pool.map(self._fit_model, harmonics_range)
+            pool.close()
             for model in models:
                 if model.aic < best_aic:
                     best_model = model
