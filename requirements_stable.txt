@@ -31,7 +31,7 @@ scipy==1.2.0
 six==1.12.0
 sklearn==0.0
 statsmodels==0.9.0
--e git+git@github.com:intive-DataScience/tbats.git@8b1b744f72ff6cd2a4bde3e21490cf9d47d757d6#egg=tbats
+-e git+git@github.com:intive-DataScience/tbats.git@a499501013fafa2ed8b03f5b11e16f69cba9882a#egg=tbats
 tqdm==4.28.1
 twine==1.12.1
 urllib3==1.24.1
