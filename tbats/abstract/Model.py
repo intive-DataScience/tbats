@@ -226,7 +226,13 @@ class Model(object):
         # store fit results
         self.x_last = x
         self.resid_boxcox = yw - yw_hat
-        self.y_hat = self._inv_boxcox(yw_hat)
+        try:
+            self.y_hat = self._inv_boxcox(yw_hat)
+        except RuntimeWarning:
+            self.add_warning('Box-Cox related numeric calculation issues detected. Model is not usable.')
+            self.is_fitted = False
+            return self
+
         self.resid = self.y - self.y_hat
 
         self.is_fitted = True
