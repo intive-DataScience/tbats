@@ -141,6 +141,7 @@ class Estimator(BaseEstimator):
         # note n_jobs = None means to use cpu_count()
         pool = multiprocessing.pool.Pool(processes=self.n_jobs)
         models = pool.map(self._case_fit, components_grid)
+        pool.close()
         self._y = None  # clean-up
         if len(models) == 0:
             return None
