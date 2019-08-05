@@ -33,6 +33,10 @@ class Components(AbstractComponents):
         self._init_seasonal_harmonics(seasonal_harmonics)
         # assertion: all provided harmonics are positive, 0 should not be provided
 
+    @classmethod
+    def create_constant_components(cls):
+        return cls(use_box_cox=False, use_trend=False, seasonal_periods=None, use_arma_errors=False)
+
     def gamma_params_amount(self):
         """TBATS model contains two gamma parameters for each seasonality"""
         return 2 * len(self.seasonal_periods)

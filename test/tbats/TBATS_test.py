@@ -7,6 +7,14 @@ from tbats import TBATS
 
 class TestTBATS(object):
 
+    def test_constant_model(self):
+        y = [3.2] * 20
+        estimator = TBATS()
+        model = estimator.fit(y)
+        assert np.allclose([0.0] * len(y), model.resid)
+        assert np.allclose(y, model.y_hat)
+        assert np.allclose([3.2] * 5, model.forecast(steps=5))
+
     def test_normalize_seasonal_periods(self):
         seasonal_periods = [7, 0, 1, 9, 9, 8.8, 10.11, 3, -1, 2, 1.01]
         with pytest.warns(error.InputArgsWarning):

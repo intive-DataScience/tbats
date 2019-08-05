@@ -22,8 +22,8 @@ class TestBATS(object):
 
     def test_constant_model(self):
         y = [2.9] * 20
-        bats = BATS()
-        model = bats.fit(y)
+        estimator = BATS()
+        model = estimator.fit(y)
         assert np.allclose([0.0] * len(y), model.resid)
         assert np.allclose(y, model.y_hat)
         assert np.allclose([2.9] * 5, model.forecast(steps=5))
