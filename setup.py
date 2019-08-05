@@ -51,6 +51,7 @@ setuptools.setup(
     author_email='grzegorz.skorupa@intive.com',
     description='BATS and TBATS for time series forecasting',
     long_description=long_description,
+    long_description_content_type="text/markdown",
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
