@@ -1,5 +1,6 @@
 import numpy as np
-import multiprocessing
+import multiprocessing as actual_processing
+import multiprocessing.dummy as dummy_processing
 from sklearn.base import BaseEstimator
 from sklearn.utils.validation import check_array, column_or_1d as c1d
 from sklearn.model_selection import ParameterGrid
@@ -139,7 +140,7 @@ class Estimator(BaseEstimator):
         """
         self._y = y
         # note n_jobs = None means to use cpu_count()
-        pool = multiprocessing.pool.Pool(processes=self.n_jobs)
+        pool = self._prepare_pool(self.n_jobs)
         models = pool.map(self._case_fit, components_grid)
         pool.close()
         self._y = None  # clean-up
@@ -150,6 +151,11 @@ class Estimator(BaseEstimator):
             if model.aic < best_model.aic:
                 best_model = model
         return best_model
+
+    def _prepare_pool(self, n_jobs=None):
+        if n_jobs == 1:
+            return dummy_processing.Pool(processes=n_jobs)
+        return actual_processing.Pool(processes=n_jobs)
 
     def _prepare_components_grid(self, seasonal_harmonics=None):
         """Provides a grid of all allowed model component combinations.

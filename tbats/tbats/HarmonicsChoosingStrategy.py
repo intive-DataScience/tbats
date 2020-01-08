@@ -1,6 +1,7 @@
 import numpy as np
 import fractions
-import multiprocessing
+import multiprocessing as actual_processing
+import multiprocessing.dummy as dummy_processing
 
 
 class HarmonicsChoosingStrategy(object):
@@ -8,7 +9,7 @@ class HarmonicsChoosingStrategy(object):
     def __init__(self, context, n_jobs=None):
         self.n_jobs = n_jobs
         if n_jobs is None:
-            self.n_jobs = multiprocessing.cpu_count()
+            self.n_jobs = actual_processing.cpu_count()
         self.context = context
 
     def choose(self, y, components):
@@ -78,7 +79,7 @@ class HarmonicsChoosingStrategy(object):
             self._season_index = season_index
             self._y = best_model_so_far.y
             self._components = best_model_so_far.params.components
-            pool = multiprocessing.pool.Pool(processes=self.n_jobs)
+            pool = self._prepare_pool(self.n_jobs)
             models = pool.map(self._fit_model, harmonics_range)
             pool.close()
             for model in models:
@@ -101,6 +102,11 @@ class HarmonicsChoosingStrategy(object):
         if best_aic > best_model_so_far.aic:
             return best_model_so_far
         return best_model
+
+    def _prepare_pool(self, n_jobs=None):
+        if n_jobs == 1:
+            return dummy_processing.Pool(processes=n_jobs)
+        return actual_processing.Pool(processes=n_jobs)
 
     def _fit_model(self, harmonic_to_check):
         components = self._components.with_harmonic_for_season(
