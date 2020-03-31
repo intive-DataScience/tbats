@@ -37,6 +37,25 @@ class TestBoxCox(object):
         y_back_transformed = transformation.inv_boxcox(y_transformed, lam)
         assert np.allclose(y, y_back_transformed)
 
+    @pytest.mark.parametrize(
+        "y, lam, expected_y",
+        [
+            [  # lambda is zero, expect exponent
+                [-1, 0, 1],
+                0,
+                [np.e ** -1, 1, np.e],
+            ],
+            [  # lambda is -1, force y to be > -1 where necessary
+                [-1],
+                -2,
+                [-1],
+            ],
+        ]
+    )
+    def test_negative_values_in_inverse(self, y, lam, expected_y):
+        y_back_transformed = transformation.inv_boxcox(y, lam, force_valid=True)
+        assert np.allclose(expected_y, y_back_transformed)
+
     def test_lambda_finding(self):
         np.random.seed(49385)
         y = np.exp(
