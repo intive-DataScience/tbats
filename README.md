@@ -62,7 +62,31 @@ print(fitted_model.params.components.use_box_cox)
 print(fitted_model.params.components.seasonal_harmonics)
 ```
 
-See **examples** directory for more details
+See **examples** directory for more details.
+
+## Troubleshooting
+
+BATS and TBATS tries multitude of models under the hood and **may appear slow when fitting** to long time series. In order to speed it up you can start with constrained model search space. It is recommended to run it without Box-Cox transformation and ARMA errors modelling that are the slowest model elements:
+
+```python
+# Create estimator
+estimator = TBATS(
+    seasonal_periods=[14, 30.5],
+    use_arma_errors=False,  # shall try only models without ARMA
+    use_box_cox=False  # will not use Box-Cox
+)
+fitted_model = estimator.fit(y)
+```
+
+In some environment configurations parallel computation of models freezes. Reason for this is unclear yet. If **the process appears to be stuck** you can try running it on a single core:
+
+```python
+estimator = TBATS(
+    seasonal_periods=[14, 30.5],
+    n_jobs=1
+)
+fitted_model = estimator.fit(y)
+```
 
 ## For Contributors
 
