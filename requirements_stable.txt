@@ -2,6 +2,7 @@ bleach==3.1.4
 certifi==2019.11.28
 chardet==3.0.4
 click==7.1.1
+colorama==0.4.3
 Cython==0.29.16
 docutils==0.16
 idna==2.9
@@ -20,13 +21,14 @@ pytz==2019.3
 readme-renderer==25.0
 requests==2.23.0
 requests-toolbelt==0.9.1
+rfc3986==1.4.0
 scikit-learn==0.22.2.post1
 scipy==1.4.1
 six==1.14.0
 statsmodels==0.11.1
-tbats==1.0.10
+-e git+git@github.com:intive-DataScience/tbats.git@fefdea301343bb4327d42ea430a2301e58d48c4c#egg=tbats
 tqdm==4.44.1
-twine==3.1.1
+twine==3.2.0
 urllib3==1.25.8
 webencodings==0.5.1
 zipp==3.1.0

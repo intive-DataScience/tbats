@@ -1,16 +1,8 @@
-from ..abstract import MatrixBuilderCache, ContextInterface
-import tbats.error as error
+from ..abstract import MatrixBuilderCache, Context as AbstractContext
 from tbats.bats import *
-from ..transformation import BoxCox
 
 
-class Context(ContextInterface):
-
-    def __init__(self, show_warnings=True):
-        self.exception_handler = error.ExceptionHandler(show_warnings)
-
-    def get_exception_handler(self):
-        return self.exception_handler
+class Context(AbstractContext):
 
     def create_constant_model(self, constant_value):
         return self.create_model(

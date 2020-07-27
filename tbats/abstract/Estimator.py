@@ -140,9 +140,9 @@ class Estimator(BaseEstimator):
         """
         self._y = y
         # note n_jobs = None means to use cpu_count()
-        pool = self._prepare_pool(self.n_jobs)
-        models = pool.map(self._case_fit, components_grid)
-        pool.close()
+        with self.context.multiprocessing().Pool(processes=self.n_jobs) as pool:
+            models = pool.map(self._case_fit, components_grid)
+            pool.close()
         self._y = None  # clean-up
         if len(models) == 0:
             return None
@@ -151,11 +151,6 @@ class Estimator(BaseEstimator):
             if model.aic < best_model.aic:
                 best_model = model
         return best_model
-
-    def _prepare_pool(self, n_jobs=None):
-        if n_jobs == 1:
-            return dummy_processing.Pool(processes=n_jobs)
-        return actual_processing.Pool(processes=n_jobs)
 
     def _prepare_components_grid(self, seasonal_harmonics=None):
         """Provides a grid of all allowed model component combinations.

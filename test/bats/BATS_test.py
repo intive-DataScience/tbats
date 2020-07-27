@@ -40,6 +40,8 @@ class TestBATS(object):
             y[t] = l + d
             l = l + alpha * d
 
-        estimator = BATS()
+        # pytest does not work well with spawn multiprocessing method
+        # https://github.com/pytest-dev/pytest/issues/958
+        estimator = BATS(multiprocessing_start_method='fork')
         model = estimator.fit(y)
         assert np.isclose(alpha, model.params.alpha, atol=0.1)

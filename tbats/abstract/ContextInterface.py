@@ -43,3 +43,7 @@ class ContextInterface(object):
     def create_harmonics_choosing_strategy(self):
         # abstract method
         raise NotImplementedError()
+
+    def multiprocessing(self):
+        # abstract method
+        raise NotImplementedError()

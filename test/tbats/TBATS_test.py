@@ -80,8 +80,10 @@ class TestTBATS(object):
         y_to_fit = y[:(T - steps)]
         y_to_predict = y[(T - steps):]
 
+        # pytest does not work well with spawn multiprocessing method
+        # https://github.com/pytest-dev/pytest/issues/958
         estimator = TBATS(use_arma_errors=False, use_trend=True, use_damped_trend=True, use_box_cox=False,
-                          seasonal_periods=[period_length])
+                          seasonal_periods=[period_length], multiprocessing_start_method='fork')
 
         fitted_model = estimator.fit(y_to_fit)
         resid = fitted_model.resid
@@ -149,7 +151,11 @@ class TestTBATS(object):
         y_to_fit = y[:(T - steps)]
         y_to_predict = y[(T - steps):]
 
-        estimator = TBATS(use_box_cox=False, use_arma_errors=False, use_trend=False, seasonal_periods=seasonal_periods)
+        # pytest does not work well with spawn multiprocessing method
+        # https://github.com/pytest-dev/pytest/issues/958
+        estimator = TBATS(use_box_cox=False, use_arma_errors=False, use_trend=False,
+                          seasonal_periods=seasonal_periods,
+                          multiprocessing_start_method='fork')
         fitted_model = estimator.fit(y_to_fit)
         resid = fitted_model.resid
 

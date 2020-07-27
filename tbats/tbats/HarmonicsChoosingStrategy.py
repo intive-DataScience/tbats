@@ -1,15 +1,14 @@
 import numpy as np
 import fractions
-import multiprocessing as actual_processing
-import multiprocessing.dummy as dummy_processing
+import multiprocessing
 
 
 class HarmonicsChoosingStrategy(object):
 
-    def __init__(self, context, n_jobs=None):
-        self.n_jobs = n_jobs
-        if n_jobs is None:
-            self.n_jobs = actual_processing.cpu_count()
+    def __init__(self, context, checking_range=None):
+        self.checking_range = checking_range
+        if checking_range is None:
+            self.checking_range = multiprocessing.cpu_count()
         self.context = context
 
     def choose(self, y, components):
@@ -32,7 +31,7 @@ class HarmonicsChoosingStrategy(object):
     def initial_harmonics_to_check(self, max_harmonic):
         first_harmonics_to_check = 6
         harmonic_to_check = np.min([max_harmonic, first_harmonics_to_check])
-        parallel = np.max([self.n_jobs, 3])
+        parallel = np.max([self.checking_range, 3])
         range_max = harmonic_to_check + int(np.ceil(parallel / 2))
         range_max = np.max([range_max, 2 + parallel])
         range_max = np.min([range_max, max_harmonic + 1])
@@ -48,19 +47,19 @@ class HarmonicsChoosingStrategy(object):
             # we have chosen the most complex model, we need to check even more complex ones
             return range(
                 chosen_harmonic + 1,
-                np.min([chosen_harmonic + self.n_jobs, max_harmonic]) + 1
+                np.min([chosen_harmonic + self.checking_range, max_harmonic]) + 1
             )
 
         if chosen_harmonic > 2 and chosen_harmonic == np.min(previously_checked):
             # we have chosen the least complex model, we need to check even simpler models
             return range(
-                np.max([2, chosen_harmonic - self.n_jobs]),
+                np.max([2, chosen_harmonic - self.checking_range]),
                 chosen_harmonic
             )
         if chosen_harmonic == 1 and np.min(previously_checked) > 2 and max_harmonic > 1:
             # we are still on the initial model, check simple models
             return range(
-                np.max([2, np.min(previously_checked) - self.n_jobs]),
+                np.max([2, np.min(previously_checked) - self.checking_range]),
                 np.min(previously_checked)
             )
         return []
@@ -79,9 +78,9 @@ class HarmonicsChoosingStrategy(object):
             self._season_index = season_index
             self._y = best_model_so_far.y
             self._components = best_model_so_far.params.components
-            pool = self._prepare_pool(self.n_jobs)
-            models = pool.map(self._fit_model, harmonics_range)
-            pool.close()
+            with self.context.multiprocessing().Pool(processes=self.checking_range) as pool:
+                models = pool.map(self._fit_model, harmonics_range)
+                pool.close()
             for model in models:
                 if model.aic < best_aic:
                     best_model = model
@@ -102,11 +101,6 @@ class HarmonicsChoosingStrategy(object):
         if best_aic > best_model_so_far.aic:
             return best_model_so_far
         return best_model
-
-    def _prepare_pool(self, n_jobs=None):
-        if n_jobs == 1:
-            return dummy_processing.Pool(processes=n_jobs)
-        return actual_processing.Pool(processes=n_jobs)
 
     def _fit_model(self, harmonic_to_check):
         components = self._components.with_harmonic_for_season(

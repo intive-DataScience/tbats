@@ -11,6 +11,8 @@ from .SeedFinder import SeedFinder
 from .Case import Case
 from .Estimator import Estimator
 from .ContextInterface import ContextInterface
+from .Context import Context
 
 __all__ = ['Model', 'MatrixBuilderInterface', 'MatrixBuilderCache', 'MatrixBuilder', 'ModelParams', 'ArrayHelper',
-           'Components', 'ParamsOptimizer', 'SeedFinder', 'Case', 'ContextInterface', 'Estimator', 'ComponentMatrix']
+           'Components', 'ParamsOptimizer', 'SeedFinder', 'Case', 'ContextInterface', 'Estimator', 'ComponentMatrix',
+           'Context']

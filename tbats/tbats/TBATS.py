@@ -21,7 +21,8 @@ class TBATS(Estimator):
                  use_trend=None, use_damped_trend=None,
                  seasonal_periods=None, use_arma_errors=True,
                  show_warnings=True,
-                 n_jobs=None, context=None):
+                 n_jobs=None, multiprocessing_start_method='spawn',
+                 context=None):
         """ Class constructor
 
         Parameters
@@ -52,11 +53,15 @@ class TBATS(Estimator):
         n_jobs: int, optional (default=None)
             How many jobs to run in parallel when fitting BATS model.
             When not provided BATS shall try to utilize all available cpu cores.
+        multiprocessing_start_method: str, optional (default='spawn')
+            How threads should be started.
+            See https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods
         context: abstract.ContextInterface, optional (default=None)
             For advanced users only. Provide this to override default behaviors
         """
         if context is None:
-            context = Context(show_warnings)  # the default TBATS context
+            # the default TBATS context
+            context = Context(show_warnings, n_jobs=n_jobs, multiprocessing_start_method=multiprocessing_start_method)
         super().__init__(context, use_box_cox=use_box_cox, box_cox_bounds=box_cox_bounds,
                          use_trend=use_trend, use_damped_trend=use_damped_trend,
                          seasonal_periods=seasonal_periods, use_arma_errors=use_arma_errors,
@@ -69,8 +74,7 @@ class TBATS(Estimator):
         """Checks various model combinations to find best one by AIC"""
         components_grid = self._prepare_non_seasonal_components_grid()
         non_seasonal_model = self._choose_model_from_possible_component_settings(y, components_grid=components_grid)
-
-        harmonics_choosing_strategy = self.context.create_harmonics_choosing_strategy(n_jobs=self.n_jobs)
+        harmonics_choosing_strategy = self.context.create_harmonics_choosing_strategy()
         chosen_harmonics = harmonics_choosing_strategy.choose(y, self.create_most_complex_components())
         components_grid = self._prepare_components_grid(seasonal_harmonics=chosen_harmonics)
         seasonal_model = self._choose_model_from_possible_component_settings(y, components_grid=components_grid)

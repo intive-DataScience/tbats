@@ -1,16 +1,8 @@
-from ..abstract import MatrixBuilderCache, ContextInterface
-from ..transformation import BoxCox
-import tbats.error as error
+from ..abstract import MatrixBuilderCache, Context as AbstractContext
 from tbats.tbats import *
 
 
-class Context(ContextInterface):
-
-    def __init__(self, show_warnings=True):
-        self.exception_handler = error.ExceptionHandler(show_warnings)
-
-    def get_exception_handler(self):
-        return self.exception_handler
+class Context(AbstractContext):
 
     def create_constant_model(self, constant_value):
         return self.create_model(
@@ -46,5 +38,5 @@ class Context(ContextInterface):
     def create_case(self, components):
         return Case(components=components, context=self)
 
-    def create_harmonics_choosing_strategy(self, n_jobs=None):
-        return HarmonicsChoosingStrategy(self, n_jobs=n_jobs)
+    def create_harmonics_choosing_strategy(self):
+        return HarmonicsChoosingStrategy(self, checking_range=self.n_jobs)

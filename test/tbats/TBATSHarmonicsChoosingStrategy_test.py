@@ -24,8 +24,9 @@ class TestTBATSHarmonicsChoosingStrategy(object):
             params = ModelParams(self.components, alpha=0)
             return TestTBATSHarmonicsChoosingStrategy.ModelMock(y, params, self.aic_score)
 
-    class ContextMock:
+    class ContextMock(Context):
         def __init__(self, aic_score_map):
+            super().__init__(n_jobs=1)
             self.aic_score_map = aic_score_map
             pass
 
@@ -124,7 +125,8 @@ class TestTBATSHarmonicsChoosingStrategy(object):
         ]
     )
     def test_choose(self, components, aic_score_map, expected_harmonics):
-        strategy = HarmonicsChoosingStrategy(self.ContextMock(aic_score_map), n_jobs=1)
+        context = self.ContextMock(aic_score_map)
+        strategy = HarmonicsChoosingStrategy(context, checking_range=1)
         harmonics = strategy.choose([1, 2, 3], Components(**components))
         assert np.array_equal(expected_harmonics, harmonics)
 
@@ -168,7 +170,7 @@ class TestTBATSHarmonicsChoosingStrategy(object):
         ]
     )
     def test_calculate_max(self, seasonal_periods, expected_max_harmonics):
-        strategy = HarmonicsChoosingStrategy(Context(), n_jobs=1)
+        strategy = HarmonicsChoosingStrategy(Context(), checking_range=1)
         harmonics = strategy.calculate_max(np.array(seasonal_periods))
         assert np.array_equal(expected_max_harmonics, harmonics)
 
@@ -212,7 +214,7 @@ class TestTBATSHarmonicsChoosingStrategy(object):
         ]
     )
     def test_calculate_max_better(self, seasonal_periods, expected_max_harmonics):
-        strategy = HarmonicsChoosingStrategy(Context(), n_jobs=1)
+        strategy = HarmonicsChoosingStrategy(Context(), checking_range=1)
         harmonics = strategy.calculate_max(
             np.asarray(seasonal_periods),
             HarmonicsChoosingStrategy.max_harmonic_dependency_reduction_better
@@ -258,7 +260,7 @@ class TestTBATSHarmonicsChoosingStrategy(object):
         ]
     )
     def test_initial_harmonics_to_check(self, n_jobs, max_harmonic, expected_range):
-        strategy = HarmonicsChoosingStrategy(Context(), n_jobs=n_jobs)
+        strategy = HarmonicsChoosingStrategy(Context(), checking_range=n_jobs)
         obtained_range = strategy.initial_harmonics_to_check(max_harmonic)
         assert np.array_equal(expected_range, obtained_range)
 
@@ -292,7 +294,7 @@ class TestTBATSHarmonicsChoosingStrategy(object):
         ]
     )
     def test_next_harmonics_to_check(self, n_jobs, max_harmonic, chosen_harmonic, previous_range, expected_range):
-        strategy = HarmonicsChoosingStrategy(Context(), n_jobs=n_jobs)
+        strategy = HarmonicsChoosingStrategy(Context(), checking_range=n_jobs)
         obtained_range = strategy.next_harmonics_to_check(
             max_harmonic=max_harmonic,
             previously_checked=previous_range,
