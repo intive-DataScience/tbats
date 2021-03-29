@@ -15,7 +15,7 @@ patsy==0.5.1
 pip-tools==4.5.1
 pkginfo==1.5.0.1
 pmdarima==1.5.3
-Pygments==2.6.1
+Pygments==2.7.4
 python-dateutil==2.8.1
 pytz==2019.3
 readme-renderer==25.0
