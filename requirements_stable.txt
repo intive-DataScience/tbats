@@ -29,6 +29,6 @@ statsmodels==0.11.1
 -e git+git@github.com:intive-DataScience/tbats.git@fefdea301343bb4327d42ea430a2301e58d48c4c#egg=tbats
 tqdm==4.44.1
 twine==3.2.0
-urllib3==1.25.8
+urllib3==1.26.5
 webencodings==0.5.1
 zipp==3.1.0
