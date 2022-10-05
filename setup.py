@@ -43,7 +43,7 @@ class RTestCommand(TestCommand):
 
 setuptools.setup(
     name='tbats',
-    version='1.1.0',
+    version='1.1.1',
     packages=setuptools.find_packages(exclude=('test', 'test_R')),
     url='https://github.com/intive-DataScience/tbats',
     license='MIT License',
@@ -60,7 +60,7 @@ setuptools.setup(
     install_requires=['numpy', 'scipy', 'pmdarima', 'scikit-learn'],
     tests_require=['pytest'],
     extras_require={
-        'dev': ['pip-tools', 'rpy2'],
+        'dev': ['pip-tools', 'pytest', 'rpy2'],
     },
     cmdclass={
         'test': PyTest,

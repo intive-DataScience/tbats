@@ -99,12 +99,12 @@ pip install -e .[dev]
 Unit and integration tests:
 
 ```bash
-python setup.py test
+pytest test/
 ```
 
-R forecast package comparison tests. Those DO NOT RUN with default test command, you need R forecast package installed:
+R forecast package comparison tests. Those DO NOT RUN with default test command, you need R and forecast package installed:
 ```bash
-python setup.py test_r
+pytest test_R/
 ```
 
 ## Comparison to R implementation

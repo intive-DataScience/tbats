@@ -1,6 +1,7 @@
 import numpy as np
 
 import rpy2.robjects as ro
+from rpy2.rinterface_lib.sexp import NULLType
 from rpy2.robjects.packages import importr
 
 from tbats.tbats import Model as TBATSModel
@@ -143,12 +144,12 @@ class RComparisonBase(object):
 
     def get_R_float_or_null(self, r_model, paramName):
         val = np.array(r_model.rx(paramName)).flatten()[0]
-        if isinstance(val, ro.rinterface.RNULLType):
+        if isinstance(val, NULLType):
             return None
         return float(val)
 
     def get_R_array_or_null(self, r_model, paramName):
         val = np.array(r_model.rx(paramName)).flatten()
-        if len(val) == 0 or isinstance(val[0], ro.rinterface.RNULLType):
+        if len(val) == 0 or isinstance(val[0], NULLType):
             return None
         return val
