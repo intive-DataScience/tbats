@@ -1,3 +1,5 @@
+__version__ = '1.1.1'
+
 import tbats.abstract as abstract
 import tbats.bats as bats
 import tbats.tbats as tbats

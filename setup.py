@@ -1,3 +1,5 @@
+import re
+
 import setuptools
 import distutils.cmd
 import distutils.log
@@ -5,6 +7,10 @@ import subprocess
 import sys
 
 from setuptools.command.test import test as TestCommand
+
+# Getting version:
+with open("tbats/__init__.py") as init_file:
+    version = re.search("__version__ = \'(.*?)\'", init_file.read()).group(1)
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -43,7 +49,7 @@ class RTestCommand(TestCommand):
 
 setuptools.setup(
     name='tbats',
-    version='1.1.1',
+    version=version,
     packages=setuptools.find_packages(exclude=('test', 'test_R')),
     url='https://github.com/intive-DataScience/tbats',
     license='MIT License',
