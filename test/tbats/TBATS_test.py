@@ -171,3 +171,20 @@ class TestTBATS(object):
         # forecast should be close to actual
         y_predicted = fitted_model.forecast(steps=steps)
         assert np.allclose(y_to_predict, y_predicted, 0.2)
+
+    def test_no_numeric_regression_issues(self):
+        """
+        Test https://github.com/intive-DataScience/tbats/issues/40.
+
+        The issue was caused by numeric precision issue for harmonics that start as 0 but are regressed
+        to absurd high values.
+        """
+        y = [
+            4140, 4510, 4378, 5010, 5222, 6260, 5094, 5854, 6010, 6428, 5890, 6414,
+            6346, 6034, 6770, 7450, 7266, 6788, 6162, 8476, 6480, 5872, 5810, 6522,
+            6444, 6110, 5778, 6068, 6018, 6174, 5202, 4820, 5114, 5686, 4946,
+        ]
+        estimator = TBATS(seasonal_periods=[2], n_jobs=1, use_box_cox=True)
+        _ = estimator.fit(y) # should not fail
+
+
