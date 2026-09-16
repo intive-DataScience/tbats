@@ -1,10 +1,15 @@
 #!/bin/bash
 
-python -m pip install --upgrade setuptools wheel
-python -m pip install --upgrade twine
+set -euo pipefail
 
-python setup.py test || exit_on_error "Tests are not passing"
-python setup.py test_r || exit_on_error "R comparison tests are not passing"
+if ! command -v uv >/dev/null 2>&1; then
+    echo 'uv is required. Install uv, then rerun this script.' >&2
+    exit 1
+fi
 
-pip-compile --output-file requirements.txt setup.py
-pip freeze > requirements_stable.txt
+uv sync --locked
+uv run --locked python -m pytest test/
+uv run --locked python scripts/spawn_smoke.py
+rm -rf dist
+uv build --no-sources
+uvx --from twine==7.0.0 twine check dist/*

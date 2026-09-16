@@ -10,7 +10,7 @@ Package provides BATS and TBATS time series forecasting methods described in:
 From pypi:
 
 ```bash
-pip install tbats
+python -m pip install tbats
 ```
 
 Import via:
@@ -90,22 +90,58 @@ fitted_model = estimator.fit(y)
 
 ## For Contributors
 
-Building package:
+### Setup and locked development environment
+
+Install [uv](https://docs.astral.sh/uv/) 0.12.3, then create the locked development environment:
 
 ```bash
-pip install -e .[dev]
+uv sync --locked
 ```
 
-Unit and integration tests:
+The committed `uv.lock` is a universal development and CI lock for Python 3.10–3.13. It is not a consumer installation requirement; consumers install the package with pip or another standards-compliant installer. Update it deliberately after dependency changes:
 
 ```bash
-pytest test/
+uv lock
 ```
 
-R forecast package comparison tests. Those DO NOT RUN with default test command, you need R and forecast package installed:
+### Testing
+
+Run the non-R unit and integration suite:
+
 ```bash
-pytest test_R/
+uv run --locked python -m pytest test/
 ```
+
+Run the bounded explicit-spawn smoke check for BATS and TBATS:
+
+```bash
+uv run --locked python scripts/spawn_smoke.py
+```
+
+R forecast package comparison tests are separate from normal development, CI, and release validation. They require R, the R `forecast` package, and the optional Python R extra:
+
+```bash
+uv sync --locked --extra r
+uv run --locked --extra r python -m pytest test_R/
+```
+
+If R packages live in a custom user library, set `R_LIBS_USER` for that command (for example, `R_LIBS_USER=/path/to/R/library uv run --locked --extra r python -m pytest test_R/`).
+
+### Release checks
+
+Run the reviewed snapshot validation and build checks before a release:
+
+```bash
+./prepare_package.sh
+uv build --no-sources
+uvx --from twine==7.0.0 twine check dist/*
+```
+
+`prepare_package.sh` runs the locked non-R suite, explicit-spawn smoke check, build, and metadata check. `publish_package.sh` is a local preflight only; it never uploads or creates tags.
+
+To release a new version, bump `tbats.__version__`, commit it on `master`, ensure all CI jobs are green, and push the protected `v<version>` tag. The tag workflow validates the tag commit is on `master`, rebuilds a fresh `dist/`, and fails closed unless it contains exactly one matching wheel and sdist. It validates both embedded metadata files and records SHA-256 hashes before installing and smoking the exact wheel externally. The later upload is bound to those two validated paths; the publish job downloads that exact artifact, validates it again, recomputes and compares both hashes, and only then publishes through PyPI Trusted Publishing. Existing version 1.1.3 cannot be republished.
+
+One-time release administration: configure the PyPI Trusted Publisher with owner `intive-DataScience`, repository `tbats`, workflow `publish.yml`, and environment `pypi`. Protect the GitHub `pypi` environment and `v*` tags. No PyPI token secret is used.
 
 ## Comparison to R implementation
 
@@ -113,9 +149,4 @@ Python implementation is meant to be as much as possible equivalent to R impleme
 
 - BATS in R https://www.rdocumentation.org/packages/forecast/versions/8.4/topics/bats
 - TBATS in R: https://www.rdocumentation.org/packages/forecast/versions/8.4/topics/tbats
-
-
-
-
-
 

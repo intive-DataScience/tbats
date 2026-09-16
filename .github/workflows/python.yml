@@ -1,0 +1,61 @@
+name: Python
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_call:
+
+jobs:
+  test-matrix:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.3"
+      - run: uv lock --check
+      - run: uv sync --locked --python ${{ matrix.python-version }}
+      - run: uv run --locked python -m pytest test/
+      - run: uv run --locked python scripts/spawn_smoke.py
+        timeout-minutes: 10
+
+  minimum-dependencies:
+    name: Python 3.13 minimum dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.3"
+      - run: uv venv --python 3.13 .venv-minimum
+      - run: uv pip install --python .venv-minimum/bin/python numpy==2.1.0 scipy==1.14.1 scikit-learn==1.6.0 pmdarima==2.1.1 'pytest>=8.3'
+      - run: uv pip install --python .venv-minimum/bin/python --no-deps -e .
+      - run: uv pip check --python .venv-minimum/bin/python
+      - run: .venv-minimum/bin/python -m pytest test/
+      - run: .venv-minimum/bin/python scripts/spawn_smoke.py
+        timeout-minutes: 10
+
+  build-clean-wheel:
+    name: Python 3.13 build and clean wheel
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.3"
+      - run: uv build --no-sources
+      - run: uvx --from twine==7.0.0 twine check dist/*
+      - run: uv venv --python 3.13 ../tbats-wheel-venv
+      - working-directory: ..
+        run: uv pip install --python ./tbats-wheel-venv/bin/python ./tbats/dist/*.whl
+      - working-directory: ..
+        run: uv pip check --python ./tbats-wheel-venv/bin/python
+      - working-directory: ..
+        run: ./tbats-wheel-venv/bin/python tbats/scripts/spawn_smoke.py
+        timeout-minutes: 10

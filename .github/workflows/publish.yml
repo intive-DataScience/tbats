@@ -1,0 +1,139 @@
+name: Publish
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    uses: ./.github/workflows/python.yml
+    permissions:
+      contents: read
+
+  build:
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.artifacts.outputs.version }}
+      wheel_filename: ${{ steps.artifacts.outputs.wheel_filename }}
+      wheel_sha256: ${{ steps.artifacts.outputs.wheel_sha256 }}
+      sdist_filename: ${{ steps.artifacts.outputs.sdist_filename }}
+      sdist_sha256: ${{ steps.artifacts.outputs.sdist_sha256 }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+      - name: Confirm tag commit is on master
+        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/master
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
+        with:
+          version: "0.12.3"
+      - run: rm -rf dist && mkdir dist && uv build --no-sources --out-dir dist && rm -f dist/.gitignore
+      - run: uvx --from twine==7.0.0 twine check dist/*
+      - name: Validate tagged release artifacts
+        id: artifacts
+        run: |
+          expected_version="${GITHUB_REF_NAME#v}"
+          python scripts/validate_release_artifacts.py dist "$expected_version" --github-output "$GITHUB_OUTPUT"
+      - run: uv venv --python 3.13 ../tbats-release-wheel-venv
+      - working-directory: ..
+        env:
+          WHEEL_FILENAME: ${{ steps.artifacts.outputs.wheel_filename }}
+        run: uv pip install --python ./tbats-release-wheel-venv/bin/python "./tbats/dist/$WHEEL_FILENAME"
+      - working-directory: ..
+        run: uv pip check --python ./tbats-release-wheel-venv/bin/python
+      - working-directory: ..
+        run: cp tbats/scripts/spawn_smoke.py tbats-release-spawn-smoke.py && ./tbats-release-wheel-venv/bin/python tbats-release-spawn-smoke.py
+        timeout-minutes: 10
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dist
+          path: |
+            dist/${{ steps.artifacts.outputs.wheel_filename }}
+            dist/${{ steps.artifacts.outputs.sdist_filename }}
+          retention-days: 1
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    environment:
+      name: pypi
+      url: https://pypi.org/p/tbats
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist
+          path: dist/
+      - name: Validate downloaded release artifact handoff
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+          BUILD_VERSION: ${{ needs.build.outputs.version }}
+          WHEEL_FILENAME: ${{ needs.build.outputs.wheel_filename }}
+          WHEEL_SHA256: ${{ needs.build.outputs.wheel_sha256 }}
+          SDIST_FILENAME: ${{ needs.build.outputs.sdist_filename }}
+          SDIST_SHA256: ${{ needs.build.outputs.sdist_sha256 }}
+        run: |
+          set -euo pipefail
+          if [[ "$TAG_NAME" != v* || "$TAG_NAME" == v ]]; then
+            echo 'Release tag must begin with v followed by a version.' >&2
+            exit 1
+          fi
+          tag_version="${TAG_NAME#v}"
+          if [[ "$tag_version" != "$BUILD_VERSION" ]]; then
+            echo 'Release tag version does not match the trusted build version.' >&2
+            exit 1
+          fi
+          if [[ "$WHEEL_FILENAME" =~ [[:cntrl:]/] || "$SDIST_FILENAME" =~ [[:cntrl:]/] ]]; then
+            echo 'Release artifact filenames must not contain control characters or slashes.' >&2
+            exit 1
+          fi
+          expected_wheel="tbats-${BUILD_VERSION}-py3-none-any.whl"
+          expected_sdist="tbats-${BUILD_VERSION}.tar.gz"
+          if [[ "$WHEEL_FILENAME" != "$expected_wheel" || "$SDIST_FILENAME" != "$expected_sdist" ]]; then
+            echo 'Release artifact filenames do not have the expected forms.' >&2
+            exit 1
+          fi
+          shopt -s dotglob nullglob
+          entries=(dist/*)
+          if [[ "${#entries[@]}" -ne 2 || "$WHEEL_FILENAME" == "$SDIST_FILENAME" ]]; then
+            echo 'Expected exactly two distinct release artifacts.' >&2
+            exit 1
+          fi
+          for entry in "${entries[@]}"; do
+            if [[ "$entry" != "dist/$WHEEL_FILENAME" && "$entry" != "dist/$SDIST_FILENAME" ]]; then
+              echo "Downloaded artifact has an unexpected name: $entry" >&2
+              exit 1
+            fi
+            if [[ -L "$entry" ]]; then
+              echo "Release artifact must not be a symlink: $entry" >&2
+              exit 1
+            fi
+            if [[ ! -f "$entry" ]]; then
+              echo "Release artifact is not a regular file: $entry" >&2
+              exit 1
+            fi
+          done
+          if [[ ! -f "dist/$WHEEL_FILENAME" || ! -f "dist/$SDIST_FILENAME" ]]; then
+            echo 'Downloaded artifact filenames do not match build outputs.' >&2
+            exit 1
+          fi
+          read -r actual_wheel_sha _ < <(sha256sum "dist/$WHEEL_FILENAME")
+          read -r actual_sdist_sha _ < <(sha256sum "dist/$SDIST_FILENAME")
+          if [[ "$actual_wheel_sha" != "$WHEEL_SHA256" || "$actual_sdist_sha" != "$SDIST_SHA256" ]]; then
+            echo 'Downloaded artifact checksums do not match build outputs.' >&2
+            exit 1
+          fi
+          printf 'wheel_filename=%s\nwheel_sha256=%s\nsdist_filename=%s\nsdist_sha256=%s\n' \
+            "$WHEEL_FILENAME" "$actual_wheel_sha" "$SDIST_FILENAME" "$actual_sdist_sha"
+      - uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+        with:
+          packages-dir: dist/
