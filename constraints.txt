@@ -1,3 +1,0 @@
-# pandas is transitive through pmdarima. Keep its 2.x API during the Python 3.13
-# migration; remove this constraint only after the runtime compatibility phase.
-pandas<3

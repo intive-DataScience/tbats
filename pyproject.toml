@@ -31,13 +31,10 @@ dependencies = [
 Homepage = "https://github.com/intive-DataScience/tbats"
 
 [project.optional-dependencies]
-dev = [
-    "pytest>=8.3",
-    "pip-tools>=7.4",
-    "build>=1.2",
-    "twine>=6.1",
-]
 r = ["rpy2"]
+
+[dependency-groups]
+dev = ["pytest>=8.3"]
 
 [tool.setuptools]
 packages = { find = { include = ["tbats*"] } }

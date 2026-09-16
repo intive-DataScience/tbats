@@ -2,12 +2,14 @@
 
 set -euo pipefail
 
-PYTHON="${PYTHON:-python}"
+if ! command -v uv >/dev/null 2>&1; then
+    echo 'uv is required. Install uv, then rerun this script.' >&2
+    exit 1
+fi
 
-"$PYTHON" -m pip install --upgrade -r requirements-bootstrap.txt
-"$PYTHON" -m pip install --upgrade --no-deps -r requirements-dev.txt
-"$PYTHON" -m pip install --no-deps -e .
-"$PYTHON" -m pip check
-"$PYTHON" -m pytest test/
-"$PYTHON" scripts/spawn_smoke.py
-"$PYTHON" -m build
+uv sync --locked
+uv run --locked python -m pytest test/
+uv run --locked python scripts/spawn_smoke.py
+rm -rf dist
+uv build --no-sources
+uvx --from twine==7.0.0 twine check dist/*

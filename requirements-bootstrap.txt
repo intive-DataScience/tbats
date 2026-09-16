@@ -1,4 +1,0 @@
-# Bootstrap tools for reproducing the reviewed macOS CPython 3.13 snapshots.
-# These are intentionally separate from the runtime and development snapshots.
-pip==25.1.1
-setuptools==84.0.0
