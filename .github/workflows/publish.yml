@@ -1,8 +1,8 @@
 name: Publish
 
 on:
-  push:
-    tags: ["v*"]
+  release:
+    types: [published]
 
 permissions:
   contents: read
@@ -28,8 +28,26 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-      - name: Confirm tag commit is on master
-        run: git merge-base --is-ancestor "$GITHUB_SHA" origin/master
+      - name: Checkout and validate release tag
+        id: release_tag
+        env:
+          TAG_NAME: ${{ github.event.release.tag_name }}
+        run: |
+          set -euo pipefail
+          if [[ "$TAG_NAME" != v* || "$TAG_NAME" == v ]]; then
+            echo 'Release tag must begin with v followed by a version.' >&2
+            exit 1
+          fi
+          git fetch --force origin master "refs/tags/$TAG_NAME:refs/tags/$TAG_NAME"
+          tag_commit="$(git rev-parse "refs/tags/$TAG_NAME^{commit}")"
+          event_commit="$(git rev-parse "$GITHUB_SHA^{commit}")"
+          if [[ "$tag_commit" != "$event_commit" ]]; then
+            echo 'Release tag target does not match the release event commit.' >&2
+            exit 1
+          fi
+          git checkout --detach "$event_commit"
+          git merge-base --is-ancestor "$event_commit" origin/master
+          printf 'version=%s\n' "${TAG_NAME#v}" >> "$GITHUB_OUTPUT"
       - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           version: "0.12.3"
@@ -37,9 +55,10 @@ jobs:
       - run: uvx --from twine==7.0.0 twine check dist/*
       - name: Validate tagged release artifacts
         id: artifacts
+        env:
+          EXPECTED_VERSION: ${{ steps.release_tag.outputs.version }}
         run: |
-          expected_version="${GITHUB_REF_NAME#v}"
-          python scripts/validate_release_artifacts.py dist "$expected_version" --github-output "$GITHUB_OUTPUT"
+          python scripts/validate_release_artifacts.py dist "$EXPECTED_VERSION" --github-output "$GITHUB_OUTPUT"
       - run: uv venv --python 3.13 ../tbats-release-wheel-venv
       - working-directory: ..
         env:
@@ -75,7 +94,7 @@ jobs:
           path: dist/
       - name: Validate downloaded release artifact handoff
         env:
-          TAG_NAME: ${{ github.ref_name }}
+          TAG_NAME: ${{ github.event.release.tag_name }}
           BUILD_VERSION: ${{ needs.build.outputs.version }}
           WHEEL_FILENAME: ${{ needs.build.outputs.wheel_filename }}
           WHEEL_SHA256: ${{ needs.build.outputs.wheel_sha256 }}

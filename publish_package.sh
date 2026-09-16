@@ -15,5 +15,6 @@ fi
 
 ./prepare_package.sh
 
-echo 'Local release preflight passed. Publishing is performed only by pushing a protected v<version> tag.'
-echo 'First bump tbats.__version__, commit the release, ensure all CI jobs are green, then push its protected tag.'
+echo 'Local release preflight passed. This script never publishes.'
+echo 'After bumping tbats.__version__ and confirming green CI, create and push a protected signed v<version> tag.'
+echo 'Then publish a GitHub Release for that existing tag; the published Release triggers PyPI Trusted Publishing.'
