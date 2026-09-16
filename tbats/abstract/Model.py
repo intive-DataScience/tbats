@@ -191,7 +191,7 @@ class Model(object):
 
         if self.validate_input:
             try:
-                y = c1d(check_array(y, ensure_2d=False, force_all_finite=True, ensure_min_samples=1,
+                y = c1d(check_array(y, ensure_2d=False, ensure_all_finite=True, ensure_min_samples=1,
                                     copy=True, dtype=np.float64))  # type: np.ndarray
             except Exception as validation_exception:
                 self.context.get_exception_handler().exception("y series is invalid",

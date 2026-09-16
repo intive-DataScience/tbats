@@ -1,10 +1,13 @@
 #!/bin/bash
 
-python -m pip install --upgrade setuptools wheel
-python -m pip install --upgrade twine
+set -euo pipefail
 
-python setup.py test || exit_on_error "Tests are not passing"
-python setup.py test_r || exit_on_error "R comparison tests are not passing"
+PYTHON="${PYTHON:-python}"
 
-pip-compile --output-file requirements.txt setup.py
-pip freeze > requirements_stable.txt
+"$PYTHON" -m pip install --upgrade -r requirements-bootstrap.txt
+"$PYTHON" -m pip install --upgrade --no-deps -r requirements-dev.txt
+"$PYTHON" -m pip install --no-deps -e .
+"$PYTHON" -m pip check
+"$PYTHON" -m pytest test/
+"$PYTHON" scripts/spawn_smoke.py
+"$PYTHON" -m build

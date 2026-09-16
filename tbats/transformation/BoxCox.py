@@ -6,7 +6,7 @@ from . import Guerrero
 
 
 def find_box_cox_lambda(y, seasonal_periods=None, bounds=(-1, 2)):
-    y = c1d(check_array(y, ensure_2d=False, force_all_finite=True, ensure_min_samples=1,
+    y = c1d(check_array(y, ensure_2d=False, ensure_all_finite=True, ensure_min_samples=1,
                         copy=False, dtype=np.float64))  # type: np.ndarray
 
     guerrero = Guerrero()
@@ -14,7 +14,7 @@ def find_box_cox_lambda(y, seasonal_periods=None, bounds=(-1, 2)):
 
 
 def boxcox(y, lam=None, seasonal_periods=None, bounds=(-1, 2)):
-    y = c1d(check_array(y, ensure_2d=False, force_all_finite=True, ensure_min_samples=1,
+    y = c1d(check_array(y, ensure_2d=False, ensure_all_finite=True, ensure_min_samples=1,
                         copy=False, dtype=np.float64))  # type: np.ndarray
     if lam is None:
         lam = find_box_cox_lambda(y, seasonal_periods=seasonal_periods, bounds=bounds)
@@ -26,7 +26,7 @@ def boxcox(y, lam=None, seasonal_periods=None, bounds=(-1, 2)):
 
 
 def inv_boxcox(y, lam, force_valid=False):
-    y = c1d(check_array(y, ensure_2d=False, force_all_finite=True, ensure_min_samples=1,
+    y = c1d(check_array(y, ensure_2d=False, ensure_all_finite=True, ensure_min_samples=1,
                         copy=False, dtype=np.float64))  # type: np.ndarray
     if np.isclose(0.0, lam):
         return np.exp(y)

@@ -10,7 +10,7 @@ Package provides BATS and TBATS time series forecasting methods described in:
 From pypi:
 
 ```bash
-pip install tbats
+python -m pip install tbats
 ```
 
 Import via:
@@ -90,22 +90,61 @@ fitted_model = estimator.fit(y)
 
 ## For Contributors
 
-Building package:
+### Setup
+
+Create and activate a virtual environment, then install the project and development tools:
 
 ```bash
-pip install -e .[dev]
+python -m pip install -e '.[dev]'
 ```
 
-Unit and integration tests:
+`requirements.txt` and `requirements-dev.txt` are reviewed, fully pinned **macOS CPython 3.13** snapshots (Darwin arm64). They are not portable locks for Linux or for Python 3.10–3.12; those environments resolve compatible dependencies from project metadata. To reproduce the macOS CPython 3.13 development snapshot:
 
 ```bash
-pytest test/
+python -m pip install --upgrade -r requirements-bootstrap.txt
+python -m pip install --no-deps -r requirements-dev.txt
+python -m pip install --no-deps -e .
+python -m pip check
 ```
 
-R forecast package comparison tests. Those DO NOT RUN with default test command, you need R and forecast package installed:
+`requirements-bootstrap.txt` pins the pip and setuptools versions used for this reproduction path. Regenerate the snapshots only on macOS CPython 3.13; `update_dependencies.sh` verifies both requirements before writing either file:
+
 ```bash
-pytest test_R/
+./update_dependencies.sh
 ```
+
+### Testing
+
+Run the non-R unit and integration suite:
+
+```bash
+python -m pytest test/
+```
+
+Run the bounded explicit-spawn smoke check for BATS and TBATS:
+
+```bash
+python scripts/spawn_smoke.py
+```
+
+R forecast package comparison tests are separate from normal development, CI, and release validation. They require R, the R `forecast` package, and the optional Python R extra:
+
+```bash
+python -m pip install '.[r]'
+python -m pytest test_R/
+```
+
+### Release checks
+
+Run the reviewed snapshot validation and build checks before a release:
+
+```bash
+./prepare_package.sh
+python -m build
+python -m twine check dist/*
+```
+
+`prepare_package.sh` and `publish_package.sh` install the bootstrap first, then run the non-R suite and explicit-spawn smoke check. Publishing is a separate manual action; it requires a clean Git revision and all CI jobs to be green. These instructions do not upload artifacts.
 
 ## Comparison to R implementation
 
@@ -113,8 +152,6 @@ Python implementation is meant to be as much as possible equivalent to R impleme
 
 - BATS in R https://www.rdocumentation.org/packages/forecast/versions/8.4/topics/bats
 - TBATS in R: https://www.rdocumentation.org/packages/forecast/versions/8.4/topics/tbats
-
-
 
 
 

@@ -105,7 +105,7 @@ class Estimator(BaseEstimator):
     def _validate(self, y):
         """Validates input time series. Also adjusts box_cox if necessary."""
         try:
-            y = c1d(check_array(y, ensure_2d=False, force_all_finite=True, ensure_min_samples=1,
+            y = c1d(check_array(y, ensure_2d=False, ensure_all_finite=True, ensure_min_samples=1,
                                 copy=True, dtype=np.float64))  # type: np.ndarray
         except Exception as validation_exception:
             self.context.get_exception_handler().exception(
@@ -238,7 +238,7 @@ class Estimator(BaseEstimator):
         """
         if seasonal_periods is not None:
             try:
-                seasonal_periods = c1d(check_array(seasonal_periods, ensure_2d=False, force_all_finite=True,
+                seasonal_periods = c1d(check_array(seasonal_periods, ensure_2d=False, ensure_all_finite=True,
                                                    ensure_min_samples=0,
                                                    copy=True, dtype=dtype))
             except Exception as validation_exception:
